@@ -59,4 +59,79 @@ nCrunchTemp_*
 OpenCover/
 BenchmarkDotNet.Artifacts/
 
-# ====
+# ============================================
+# 🧰 NuGet / Paket / FAKE / tools
+# ============================================
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.paket/
+paket-files/
+.fake/
+tools/
+!tools/packages.config
+
+# ============================================
+# 🗃️ Databases
+# ============================================
+*.mdf
+*.ldf
+*.ndf
+
+# ============================================
+# 🌍 ASP.NET / Web
+# ============================================
+ScaffoldingReadMe.txt
+publish/
+wwwroot/
+*.Publish.xml
+*.pubxml
+*.publishproj
+PublishScripts/
+
+# ============================================
+# 🌐 Frontend – React / Vite / Node
+# ============================================
+invoice-client-starter/node_modules/
+invoice-client-starter/dist/
+invoice-client-starter/build/
+invoice-client-starter/.vite/
+invoice-client-starter/.angular/
+invoice-client-starter/.angular/cache/
+
+invoice-client-starter/npm-debug.log*
+invoice-client-starter/yarn-debug.log*
+invoice-client-starter/yarn-error.log*
+invoice-client-starter/pnpm-debug.log*
+invoice-client-starter/*.tsbuildinfo
+invoice-client-starter/*.local
+
+# ============================================
+# 🧠 ReSharper, Rider, JetBrains
+# ============================================
+_ReSharper*/
+.idea/
+*.DotSettings.user
+*.sln.iml
+
+# ============================================
+# 🧑‍💻 VSCode (volitelné)
+# ============================================
+.vscode/
+.vscode/*
+!.vscode/extensions.json
+
+# ============================================
+# 🧼 Miscellaneous
+# ============================================
+*.bak
+*~
+~$*
+*.old
+*.orig
+.DS_Store
+Thumbs.db
