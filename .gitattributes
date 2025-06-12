@@ -1,0 +1,20 @@
+﻿# ============================================
+# 🔄 Line endings – auto normalize
+# ============================================
+* text=auto
+
+# Optional: enforce LF for certain types (Unix style, bezpečné pro FE build)
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# Optional: enforce CRLF for Windows-only files (např. .sln apod.)
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.cs text eol=crlf

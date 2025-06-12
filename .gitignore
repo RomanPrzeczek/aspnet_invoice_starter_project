@@ -1,0 +1,62 @@
+﻿# ============================================
+# 🔒 Sensitive files & environment variables
+# ============================================
+.env
+.env.*
+secrets.json
+appsettings.Production.json
+appsettings.Development.json
+*.pfx
+
+# ============================================
+# 👤 User-specific files
+# ============================================
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.userprefs
+*.vsp
+*.psess
+*.publishsettings
+
+# ============================================
+# 🖥️ Visual Studio / .NET build outputs
+# ============================================
+.vs/
+bin/
+obj/
+out/
+Debug/
+Release/
+*.log
+*.tmp
+*.tmp_proj
+*.pidb
+*.svclog
+*.scc
+*.cache
+*.VC.db
+*.VC.VC.opendb
+*.dbmdl
+
+# ============================================
+# 🧪 Test & coverage results
+# ============================================
+TestResult*/
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.VisualState.xml
+*.dotCover
+.axoCover/
+NCrunch_*
+*.crunch*.local.xml
+nCrunchTemp_*
+OpenCover/
+BenchmarkDotNet.Artifacts/
+
+# ====
