@@ -9,5 +9,7 @@ namespace Invoices.Data.Interfaces
 {
     public interface IInvoiceRepository : IBaseRepository<Invoice>
     {
+        public new Invoice? FindById(ulong id);
+        IQueryable<Invoice> GetQueryable();
     }
 }

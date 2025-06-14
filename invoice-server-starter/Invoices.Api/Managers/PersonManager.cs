@@ -83,4 +83,15 @@ public class PersonManager : IPersonManager
         person.Hidden = true;
         return personRepository.Update(person);
     }
+
+    public PersonDto? UpdatePerson(uint personId, PersonDto personDto)
+    {
+        if (!personRepository.ExistsWithId(personId))
+            return null;
+
+        HidePerson(personId); // Hide the existing person
+
+        //return mapper.Map<PersonDto>(updatedPerson);
+        return AddPerson(personDto); // Use AddPerson to return the DTO with the new ID
+    }
 }

@@ -30,4 +30,5 @@ public interface IPersonManager
     PersonDto AddPerson(PersonDto personDto);
     void DeletePerson(uint personId);
     PersonDto? GetPerson(ulong id);
+    PersonDto? UpdatePerson(uint personId, PersonDto personDto);
 }

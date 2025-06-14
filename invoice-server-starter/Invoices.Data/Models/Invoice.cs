@@ -17,12 +17,6 @@ namespace Invoices.Data.Models
         public int InvoiceNumber { get; set; }
 
         [Required]
-        public Person Seller { get; set; } = null!;
-
-        [Required]
-        public Person Buyer { get; set; } = null!;
-
-        [Required]
         public DateTime Issued { get; set; }
 
         [Required]
@@ -32,12 +26,20 @@ namespace Invoices.Data.Models
         public string Product { get; set; } = string.Empty;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
-        [Column(TypeName = "decimal(5,2)")]
-        public decimal Vat { get; set; }
+        public int Vat { get; set; }
 
         public string? Note { get; set; }
+
+        public ulong? BuyerId { get; set; }
+
+        public ulong? SellerId { get; set; }
+
+        [ForeignKey(nameof(BuyerId))]
+        public virtual Person? Buyer { get; set; }
+
+        [ForeignKey(nameof(SellerId))]
+        public virtual Person? Seller { get; set; }
     }
 }

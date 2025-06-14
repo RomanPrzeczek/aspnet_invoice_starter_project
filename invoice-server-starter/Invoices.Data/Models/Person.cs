@@ -57,4 +57,8 @@ public class Person
     public Country Country { get; set; }
     [Required]
     public bool Hidden { get; set; } = false;
+
+    public virtual List<Invoice> Purchases { get; set; } = new List<Invoice>();
+
+    public virtual List<Invoice> Sales { get; set; } = new List<Invoice>();
 }

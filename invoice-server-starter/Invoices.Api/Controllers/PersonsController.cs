@@ -71,4 +71,17 @@ public class PersonsController : ControllerBase
         personManager.DeletePerson(personId);
         return NoContent();
     }
+
+    [HttpPut("persons/{personId}")]
+    public IActionResult UpdatePerson(uint personId, [FromBody] PersonDto person)
+    {
+        PersonDto? updatedPerson = personManager.UpdatePerson(personId,person);
+
+        if (updatedPerson is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(updatedPerson);
+    }
 }

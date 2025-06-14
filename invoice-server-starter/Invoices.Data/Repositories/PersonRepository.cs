@@ -22,6 +22,7 @@
 
 using Invoices.Data.Interfaces;
 using Invoices.Data.Models;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Invoices.Data.Repositories;
 
