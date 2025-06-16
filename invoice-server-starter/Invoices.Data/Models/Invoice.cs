@@ -11,7 +11,7 @@ namespace Invoices.Data.Models
     public class Invoice
     {
         [Key]
-        public int InvoiceId { get; set; }
+        public ulong InvoiceId { get; set; }
 
         [Required]
         public int InvoiceNumber { get; set; }

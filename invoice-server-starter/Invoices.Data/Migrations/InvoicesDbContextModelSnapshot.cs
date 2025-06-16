@@ -27,11 +27,11 @@ namespace Invoices.Data.Migrations
 
             modelBuilder.Entity("Invoices.Data.Models.Invoice", b =>
                 {
-                    b.Property<int>("InvoiceId")
+                    b.Property<decimal>("InvoiceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("decimal(20,0)");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("InvoiceId"));
 
                     b.Property<decimal?>("BuyerId")
                         .HasColumnType("decimal(20,0)");

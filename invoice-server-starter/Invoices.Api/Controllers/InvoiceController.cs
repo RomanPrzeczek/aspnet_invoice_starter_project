@@ -52,9 +52,9 @@ namespace Invoices.Api.Controllers
         [HttpPut("invoices/{invoiceId}")]
         public IActionResult UpdateInvoice(ulong invoiceId, [FromBody] InvoiceDto invoice)
         {
-            if (invoiceId != (ulong)invoice.InvoiceId)
+            if (invoiceId != invoice.InvoiceId)
             {
-                return BadRequest("Invoice ID mismatch.");
+                return BadRequest($"Invoice ID mismatch. Route ID = {invoiceId}, Body ID = {invoice.InvoiceId}");
             }
 
             InvoiceDto? updatedInvoice = _invoiceManager.UpdateInvoice(invoice);

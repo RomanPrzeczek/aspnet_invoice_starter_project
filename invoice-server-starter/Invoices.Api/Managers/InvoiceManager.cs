@@ -39,7 +39,7 @@ namespace Invoices.Api.Managers
             if (!invoiceRepository.ExistsWithId(invoiceId))
                 return null;
 
-            Invoice invoice = invoiceRepository.FindById(invoiceId)!;
+            Invoice invoice = invoiceRepository.FindById((ulong)invoiceId)!;
             InvoiceDto invoiceDto = mapper.Map<InvoiceDto>(invoice);
 
             invoiceRepository.Delete(invoiceId);
@@ -86,7 +86,7 @@ namespace Invoices.Api.Managers
 
         public InvoiceDto? GetInvoice(ulong invoiceId)
         {
-            Invoice? invoice = invoiceRepository.FindById(invoiceId);
+            Invoice? invoice = invoiceRepository.FindById((ulong)invoiceId);
 
             if (invoice == null)
             {
@@ -98,7 +98,7 @@ namespace Invoices.Api.Managers
 
         public InvoiceDto? UpdateInvoice(InvoiceDto invoiceDto)
         {
-            if (!invoiceRepository.ExistsWithId((ulong)invoiceDto.InvoiceId))
+            if (!invoiceRepository.ExistsWithId(invoiceDto.InvoiceId))
                 return null;
 
             Invoice invoice = mapper.Map<Invoice>(invoiceDto);
@@ -106,5 +106,52 @@ namespace Invoices.Api.Managers
 
             return mapper.Map<InvoiceDto>(updatedInvoice);
         }
+
+        public IEnumerable<InvoiceDto> GetInvoicesBySellerIco(string ico)
+        {
+            var invoices = invoiceRepository.GetQueryable()
+                .Include(i => i.Seller)
+                .Include(i => i.Buyer)
+                .Where(i => i.Seller.IdentificationNumber == ico)
+                .ToList();
+
+            return mapper.Map<List<InvoiceDto>>(invoices);
+        }
+
+        public IEnumerable<InvoiceDto> GetInvoicesByBuyerIco(string ico)
+        {
+            var invoices = invoiceRepository.GetQueryable()
+                .Include(i => i.Seller)
+                .Include(i => i.Buyer)
+                .Where(i => i.Buyer.IdentificationNumber == ico)
+                .ToList();
+
+            return mapper.Map<List<InvoiceDto>>(invoices);
+        }
+
+
+        ///<summary>
+        ///Below is alternative to 2 methods above with use of delegate for switching Seller/Buyer
+        ///in common query method getting invoices accordingly.
+        ///pros: 4 rows shorter code in comparison to previous above.
+        ///cons: a bit less understandable for less skilled programmers
+        /// </summary>
+/*        private IEnumerable<InvoiceDto> GetInvoicesByIco(Func<Invoice, Person> selector, string ico)
+        {
+            var invoices = invoiceRepository.GetQueryable()
+                .Include(i => i.Seller)
+                .Include(i => i.Buyer)
+                .Where(i => selector(i).IdentificationNumber == ico)
+                .ToList();
+
+            return mapper.Map<List<InvoiceDto>>(invoices);
+        }
+
+        public IEnumerable<InvoiceDto> GetInvoicesBySellerIco(string ico)
+            => GetInvoicesByIco(i => i.Seller, ico);
+
+        public IEnumerable<InvoiceDto> GetInvoicesByBuyerIco(string ico)
+            => GetInvoicesByIco(i => i.Buyer, ico);
+*/
     }
 }

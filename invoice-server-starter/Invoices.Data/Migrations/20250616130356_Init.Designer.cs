@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Invoices.Data.Migrations
 {
     [DbContext(typeof(InvoicesDbContext))]
-    [Migration("20250614100029_Initial")]
-    partial class Initial
+    [Migration("20250616130356_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,11 +30,11 @@ namespace Invoices.Data.Migrations
 
             modelBuilder.Entity("Invoices.Data.Models.Invoice", b =>
                 {
-                    b.Property<int>("InvoiceId")
+                    b.Property<decimal>("InvoiceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("decimal(20,0)");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("InvoiceId"));
 
                     b.Property<decimal?>("BuyerId")
                         .HasColumnType("decimal(20,0)");

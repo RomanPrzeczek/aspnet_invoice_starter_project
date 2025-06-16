@@ -28,7 +28,7 @@ namespace Invoices.Data.Repositories
             return invoicesDbContext.Invoices
                 .Include(i => i.Seller)
                 .Include(i => i.Buyer)
-                .FirstOrDefault(i => i.InvoiceId == (int)id);
+                .FirstOrDefault(i => i.InvoiceId == id);
         }
 
         public IQueryable<Invoice> GetQueryable()
