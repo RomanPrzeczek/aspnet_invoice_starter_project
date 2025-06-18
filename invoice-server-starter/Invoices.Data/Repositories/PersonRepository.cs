@@ -38,4 +38,9 @@ public class PersonRepository : BaseRepository<Person>, IPersonRepository
             .Where(p => p.Hidden == hidden)
             .ToList();
     }
+
+    public IQueryable<Person>? GetQueryable()
+    {
+        return invoicesDbContext.Persons;
+    }
 }

@@ -49,6 +49,14 @@ namespace Invoices.Api.Controllers
             return Ok(invoice);
         }
 
+        [HttpGet("invoices/statistics")]
+        public IActionResult GetInvoiceStatistics()
+        {
+            var statistics = _invoiceManager.GetInvoiceStatistics();
+            return Ok(statistics);
+        }
+
+
         [HttpPut("invoices/{invoiceId}")]
         public IActionResult UpdateInvoice(ulong invoiceId, [FromBody] InvoiceDto invoice)
         {
@@ -73,7 +81,7 @@ namespace Invoices.Api.Controllers
             {
                 return NotFound();
             }
-            return Ok(deletedInvoice);
+            return NoContent(); // Ok(deletedInvoice);
         }
     }
 }

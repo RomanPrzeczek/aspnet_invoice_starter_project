@@ -25,18 +25,21 @@ using Invoices.Api.Interfaces;
 using Invoices.Api.Models;
 using Invoices.Data.Interfaces;
 using Invoices.Data.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Invoices.Api.Managers;
 
 public class PersonManager : IPersonManager
 {
     private readonly IPersonRepository personRepository;
+    private readonly IInvoiceRepository invoiceRepository;
     private readonly IMapper mapper;
 
 
-    public PersonManager(IPersonRepository personRepository, IMapper mapper)
+    public PersonManager(IPersonRepository personRepository, IInvoiceRepository invoiceRepository,IMapper mapper)
     {
         this.personRepository = personRepository;
+        this.invoiceRepository = invoiceRepository;
         this.mapper = mapper;
     }
 
@@ -93,5 +96,22 @@ public class PersonManager : IPersonManager
 
         //return mapper.Map<PersonDto>(updatedPerson);
         return AddPerson(personDto); // Use AddPerson to return the DTO with the new ID
+    }
+
+    public IEnumerable<object> GetPersonStatistics()
+    {
+        var persons = personRepository.GetQueryable().ToList();
+        var invoices = invoiceRepository.GetQueryable().ToList();
+
+        var result = persons.Select(p => new
+        {
+            personId = p.PersonId,
+            personName = p.Name,
+            revenue = invoices
+                .Where(i => i.BuyerId == p.PersonId)
+                .Sum(i => i.Price)
+        });
+
+        return result;
     }
 }

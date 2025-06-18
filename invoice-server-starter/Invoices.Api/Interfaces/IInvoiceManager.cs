@@ -10,6 +10,7 @@ namespace Invoices.Api.Interfaces
         InvoiceDto? GetInvoice(ulong invoiceId);
         IEnumerable<InvoiceDto> GetInvoicesByBuyerIco(string ico);
         IEnumerable<InvoiceDto> GetInvoicesBySellerIco(string ico);
+        object GetInvoiceStatistics();
         InvoiceDto? UpdateInvoice(InvoiceDto invoiceDto);
     }
 }

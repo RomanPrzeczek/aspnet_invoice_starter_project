@@ -58,6 +58,15 @@ public class PersonsController : ControllerBase
         return Ok(person);
     }
 
+    [HttpGet("persons/statistics")]
+    public object GetPersonsStatistics()
+    {
+        var statistics = personManager.GetPersonStatistics();
+
+        return Ok(statistics);
+    }
+
+
     [HttpPost("persons")]
     public IActionResult AddPerson([FromBody] PersonDto person)
     {

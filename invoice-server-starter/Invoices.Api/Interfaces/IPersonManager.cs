@@ -31,4 +31,5 @@ public interface IPersonManager
     void DeletePerson(uint personId);
     PersonDto? GetPerson(ulong id);
     PersonDto? UpdatePerson(uint personId, PersonDto personDto);
+    IEnumerable<object> GetPersonStatistics();
 }
