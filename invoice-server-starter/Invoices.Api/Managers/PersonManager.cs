@@ -100,7 +100,7 @@ public class PersonManager : IPersonManager
 
     public IEnumerable<object> GetPersonStatistics()
     {
-        var persons = personRepository.GetQueryable().ToList();
+        var persons = personRepository.GetQueryable(false).ToList();
         var invoices = invoiceRepository.GetQueryable().ToList();
 
         var result = persons.Select(p => new

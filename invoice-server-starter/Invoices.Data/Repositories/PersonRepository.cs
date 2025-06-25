@@ -39,8 +39,9 @@ public class PersonRepository : BaseRepository<Person>, IPersonRepository
             .ToList();
     }
 
-    public IQueryable<Person>? GetQueryable()
+    public IQueryable<Person>? GetQueryable(bool hidden)
     {
-        return invoicesDbContext.Persons;
+        return invoicesDbContext.Persons
+            .Where(p => p.Hidden == hidden);
     }
 }
