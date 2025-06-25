@@ -33,13 +33,13 @@ export function InputSelect(props) {
         )}
 
         {objectItems
-          ? /* vykreslení položek jako objektů z databáze (osobnosti) */
+          ? /* vykreslení položek jako objektů z databáze  */
             props.items.map((item, index) => (
               <option key={required ? index : index + 1} value={item._id}>
                 {item.name}
               </option>
             ))
-          : /* vykreslení položek jako hodnot z výčtu (žánry) */
+          : /* vykreslení položek jako hodnot z výčtu  */
             props.items.map((item, index) => (
               <option key={required ? index : index + 1} value={item}>
                 {props.enum[item]}
