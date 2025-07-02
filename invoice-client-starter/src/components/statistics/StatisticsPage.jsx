@@ -1,31 +1,28 @@
 ﻿import React, { useEffect, useState } from "react";
 import { apiGet } from "../../utils/api";
-// import axios from "axios";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid,
+    ResponsiveContainer
+} from "recharts";
 
 const StatisticsPage = () => {
     const [invoiceStats, setInvoiceStats] = useState(null);
     const [personStats, setPersonStats] = useState([]);
 
-/*    useEffect(() => {
-        const fetchStatistics = async () => {
-            try {
-                const [invoiceRes, personRes] = await Promise.all([
-                    axios.get("http://localhost:7071/api/invoices/statistics"),
-                    axios.get("http://localhost:7071/api/persons/statistics"),
-                ]);
-
-                setInvoiceStats(invoiceRes.data);
-                setPersonStats(personRes.data);
-            } catch (error) {
-                console.error("Chyba při načítání statistik:", error);
-            }
-        };
-        fetchStatistics();
-    }, []);
-*/
     useEffect(() => {
         apiGet("/api/invoices/statistics").then((data) => setInvoiceStats(data));
-        apiGet("/api/persons/statistics").then((data) => setPersonStats(data));
+        apiGet("/api/persons/statistics").then((data) => {
+            const cleaned = data.map(p => ({
+                ...p,
+                revenue: Number(p.revenue)
+            }));
+            setPersonStats(cleaned);
+        });
     }, []);
 
     return (
@@ -46,24 +43,22 @@ const StatisticsPage = () => {
             {personStats.length > 0 && (
                 <div>
                     <h4>Výnosy podle osob</h4>
-                    <table className="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Jméno</th>
-                                <th>Výnos</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {personStats.map((p, index) => (
-                                <tr key={p.personId}>
-                                    <td>{index + 1}</td>
-                                    <td>{p.personName}</td>
-                                    <td>{p.revenue} Kč</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <>
+                        <h4 className="mt-4">📊 Výnosy podle osob</h4>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                                layout="vertical"
+                                data={personStats}
+                                margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis type="category" dataKey="personName" />
+                                <Tooltip formatter={(value) => `${value} Kč`} />
+                                <Bar dataKey="revenue" fill="#0d6efd" label={{ position: "right" }} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </>
                 </div>
             )}
         </div>
