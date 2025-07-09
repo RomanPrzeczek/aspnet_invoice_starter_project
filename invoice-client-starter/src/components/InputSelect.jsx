@@ -1,48 +1,36 @@
 import React from "react";
 
 export function InputSelect(props) {
-  const multiple = props.multiple;
-  const required = props.required || false;
+  const { multiple, required = false, name, value, handleChange, label, prompt, items, enum: enumValues } = props;
 
-  // příznak označení prázdné hodnoty
-  const emptySelected = multiple ? props.value?.length === 0 : !props.value;
-  // příznak objektové struktury položek
-  const objectItems = props.enum ? false : true;
+  const objectItems = enumValues ? false : true;
 
   return (
     <div className="form-group">
-      <label>{props.label}:</label>
+      <label htmlFor={name}>{label}:</label>
       <select
+        id={name}
         required={required}
         className="browser-default form-select"
         multiple={multiple}
-        name={props.name}
-        onChange={props.handleChange}
-        value={props.value}
+        name={name}
+        onChange={handleChange}
+        value={value}
       >
-        {required ? (
-          /* prázdná hodnota zakázaná (pro úpravu záznamu) */
-          <option disabled value={emptySelected}>
-            {props.prompt}
-          </option>
-        ) : (
-          /* prázdná hodnota povolená (pro filtrování přehledu) */
-          <option key={0} value={emptySelected}>
-            ({props.prompt})
-          </option>
-        )}
+        {/* Prázdná volba jako výchozí */}
+        <option value="" disabled={required}>
+          {prompt}
+        </option>
 
         {objectItems
-          ? /* vykreslení položek jako objektů z databáze  */
-            props.items.map((item, index) => (
-              <option key={required ? index : index + 1} value={item._id}>
+          ? items.map((item, index) => (
+              <option key={index + 1} value={item._id}>
                 {item.name}
               </option>
             ))
-          : /* vykreslení položek jako hodnot z výčtu  */
-            props.items.map((item, index) => (
-              <option key={required ? index : index + 1} value={item}>
-                {props.enum[item]}
+          : items.map((item, index) => (
+              <option key={index + 1} value={item}>
+                {enumValues[item]}
               </option>
             ))}
       </select>

@@ -54,6 +54,26 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.draggable-modal {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  z-index: 1055; /* výše než .modal-backdrop */
+  cursor: move;
+}
+
+.modal-content {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.modal-backdrop.show {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  cursor: move;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

@@ -1,26 +1,4 @@
-﻿/*  _____ _______         _                      _
- * |_   _|__   __|       | |                    | |
- *   | |    | |_ __   ___| |___      _____  _ __| | __  ___ ____
- *   | |    | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / / __|_  /
- *  _| |_   | | | | |  __/ |_ \ V  V / (_) | |  |   < | (__ / /
- * |_____|  |_|_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_(_)___/___|
- *                                _
- *              ___ ___ ___ _____|_|_ _ _____
- *             | . |  _| -_|     | | | |     |  LICENCE
- *             |  _|_| |___|_|_|_|_|___|_|_|_|
- *             |_|
- *
- *   PROGRAMOVÁNÍ  <>  DESIGN  <>  PRÁCE/PODNIKÁNÍ  <>  HW A SW
- *
- * Tento zdrojový kód je součástí výukových seriálů na
- * IT sociální síti WWW.ITNETWORK.CZ
- *
- * Kód spadá pod licenci prémiového obsahu a vznikl díky podpoře
- * našich členů. Je určen pouze pro osobní užití a nesmí být šířen.
- * Více informací na http://www.itnetwork.cz/licence
- */
-
-import React, {useEffect, useState} from "react";
+﻿import React, {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 
 import {apiGet, apiPost, apiPut} from "../utils/api";
@@ -63,10 +41,25 @@ const InvoiceForm = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        console.log("Odesílaná faktura:", invoice); // debug 
-
-        (id ? apiPut("/api/invoices/" + id, invoice) : apiPost("/api/invoices", invoice))
+    
+        // Validace před odesláním
+        if (!invoice.seller || !invoice.buyer) {
+            setError("Prosím vyberte dodavatele i odběratele.");
+            setSent(true);
+            setSuccess(false);
+            return;
+        }
+    
+        const invoiceToSend = {
+            ...invoice,
+            seller: typeof invoice.seller === "object" ? invoice.seller : { _id: Number(invoice.seller) },
+            buyer: typeof invoice.buyer === "object" ? invoice.buyer : { _id: Number(invoice.buyer) }
+        };
+        
+    
+        console.log("Odesílaná faktura:", invoiceToSend); // debug 
+    
+        (id ? apiPut("/api/invoices/" + id, invoiceToSend) : apiPost("/api/invoices", invoiceToSend))
             .then((data) => {
                 setSent(true);
                 setSuccess(true);
@@ -79,7 +72,7 @@ const InvoiceForm = () => {
                 setSuccess(false);
             });
     };
-
+    
     const sent = sentState;
     const success = successState;
 
@@ -116,7 +109,7 @@ const InvoiceForm = () => {
                     name="issued"
                     min="3"
                     label="Vystaveno"
-                    prompt="Zadejte datum vystavení"
+                    prompt="Zadejte datum vystavení formátu YYYY-MM-DD"
                     value={invoice.issued}
                     handleChange={(e) => {
                         setInvoice({...invoice, issued: e.target.value});
@@ -129,7 +122,7 @@ const InvoiceForm = () => {
                     name="dueDate"
                     min="3"
                     label="Splatnost"
-                    prompt="Zadejte datum splatnosti"
+                    prompt="Zadejte datum splatnosti formátu YYYY-MM-DD"
                     value={invoice.dueDate}
                     handleChange={(e) => {
                         setInvoice({...invoice, dueDate: e.target.value});
@@ -140,7 +133,7 @@ const InvoiceForm = () => {
                     required={true}
                     type="text"
                     name="product"
-                    min="3"
+                    min="2"
                     label="Předmět prodeje"
                     prompt="Uveďte předmět prodeje"
                     value={invoice.product}
@@ -153,7 +146,7 @@ const InvoiceForm = () => {
                     required={true}
                     type="text"
                     name="price"
-                    min="3"
+                    min="1"
                     label="Cena v Kč"
                     prompt="Uveďte cenu v Kč."
                     value={invoice.price}
@@ -166,7 +159,7 @@ const InvoiceForm = () => {
                     required={true}
                     type="text"
                     name="vat"
-                    min="3"
+                    min="2"
                     label="DPH"
                     prompt="Uveďte sazbu DPH, 21% ?."
                     value={invoice.vat}
@@ -195,13 +188,13 @@ const InvoiceForm = () => {
                     name="seller"
                     label="Dodavatel"
                     prompt="Vyberte osobu"
-                    value={invoice.seller?._id || ""}
+                    value={id ? invoice.seller?._id : invoice.seller || ""}
                     items={personsListState}
                     handleChange={(e) => {
                         setInvoice({
                             ...invoice,
-                            seller: { _id: Number(e.target.value) }
-                            });
+                            seller: e.target.value ? { _id: Number(e.target.value) } : ""
+                        });
                     }}
                 />
 
@@ -212,15 +205,16 @@ const InvoiceForm = () => {
                     name="buyer"
                     label="Odběratel"
                     prompt="Vyberte osobu"
-                    value={invoice.buyer?._id || ""}
+                    value={id ? invoice.buyer?._id : invoice.buyer || ""}
                     items={personsListState}
                     handleChange={(e) => {
                         setInvoice({
-                            ...invoice, 
-                            buyer: { _id : Number(e.target.value) }
+                            ...invoice,
+                            buyer: e.target.value ? { _id: Number(e.target.value) } : ""
                         });
                     }}
                 />
+
 
                 <input type="submit" className="btn btn-primary" value="Uložit"/>
             </form>
