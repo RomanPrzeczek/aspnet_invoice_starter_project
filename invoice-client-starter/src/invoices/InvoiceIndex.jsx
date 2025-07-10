@@ -1,4 +1,4 @@
-﻿import React, {useEffect, useState} from "react";
+﻿import {useEffect, useState} from "react";
 
 import {apiDelete, apiGet} from "../utils/api";
 
@@ -40,7 +40,7 @@ const InvoiceIndex = () => {
             setInvoices(data);
             setFilterActive(true);
         } catch (err) {
-            alert("Chyba při filtrování.");
+            alert("Chyba při filtrování: "+err.message);
         }
     };
 
@@ -89,6 +89,7 @@ const InvoiceIndex = () => {
 
             {showFilter && (
                 <InvoiceFilterModal
+                    key={Date.now()}
                     filters={filters}
                     setFilters={setFilters}
                     persons={persons}
@@ -114,6 +115,7 @@ const InvoiceIndex = () => {
                         document.body.classList.remove('modal-open');
                         document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
                     }}
+                    setShowFilter={setShowFilter}
                 />
             )}
 

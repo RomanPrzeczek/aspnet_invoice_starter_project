@@ -1,20 +1,46 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import Modal from 'bootstrap/js/dist/modal';
+import PropTypes from 'prop-types';
 
-const InvoiceFilterModal = ({ filters, setFilters, persons, onApply, onReset }) => {
+const InvoiceFilterModal = ({ filters, setFilters, persons, onApply, onReset, setShowFilter}) => {
     const modalRef = useRef(null);
     const dialogRef = useRef(null);
     const [isDragging, setDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-    useEffect(() => {
-        const modal = new Modal(modalRef.current);
-        modal.show();
+    InvoiceFilterModal.propTypes = {
+    filters: PropTypes.object.isRequired,
+    setFilters: PropTypes.func.isRequired,
+    persons: PropTypes.array.isRequired,
+    onApply: PropTypes.func.isRequired,
+    onReset: PropTypes.func.isRequired,
+    setShowFilter: PropTypes.func.isRequired
+    };
 
+    useEffect(() => {
+        const modalInstance = Modal.getOrCreateInstance(modalRef.current);
+        modalInstance.show();
+
+            const onHidden = () => {
+        // Řekni Reactu, že modal byl zavřen
+        if (typeof setShowFilter === "function") {
+            setShowFilter(false);
+        }
+    };
+
+    modalRef.current.addEventListener("hidden.bs.modal", onHidden);
         return () => {
-            modal.hide();
-            document.body.classList.remove('modal-open');
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            if (modalRef.current) {
+                modalRef.current.removeEventListener("hidden.bs.modal", onHidden);
+            }
+
+            const modalInstance = Modal.getInstance(modalRef.current);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+
+            document.body.classList.remove("modal-open");
+            document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
         };
     }, []);
 
@@ -47,7 +73,7 @@ const InvoiceFilterModal = ({ filters, setFilters, persons, onApply, onReset }) 
     };
 
     return (
-        <div className="modal fade show" ref={modalRef} tabIndex="-1" style={{ display: 'block' }}>
+        <div className="modal " ref={modalRef} tabIndex="-1">
             <div
                 className="modal-dialog draggable-modal"
                 ref={dialogRef}
