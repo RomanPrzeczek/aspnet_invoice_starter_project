@@ -29,6 +29,7 @@ public class Person
 {
     [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public ulong PersonId { get; set; }
+
     [Required]
     public string Name { get; set; } = "";
     [Required]
@@ -57,6 +58,7 @@ public class Person
     public Country Country { get; set; }
     [Required]
     public bool Hidden { get; set; } = false;
+    public string? IdentityUserId { get; set; } = null;
 
     public virtual List<Invoice> Purchases { get; set; } = new List<Invoice>();
 

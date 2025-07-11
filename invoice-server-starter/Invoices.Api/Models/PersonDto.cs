@@ -42,4 +42,5 @@ public class PersonDto
     public string City { get; set; } = "";
     public string Note { get; set; } = "";
     public Country Country { get; set; }
+    public string? IdentityUserId { get; set; } = null;
 }

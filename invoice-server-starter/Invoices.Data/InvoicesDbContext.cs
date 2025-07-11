@@ -1,33 +1,12 @@
-﻿/*  _____ _______         _                      _
- * |_   _|__   __|       | |                    | |
- *   | |    | |_ __   ___| |___      _____  _ __| | __  ___ ____
- *   | |    | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / / __|_  /
- *  _| |_   | | | | |  __/ |_ \ V  V / (_) | |  |   < | (__ / /
- * |_____|  |_|_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_(_)___/___|
- *
- *                      ___ ___ ___
- *                     | . |  _| . |  LICENCE
- *                     |  _|_| |___|
- *                     |_|
- *
- *    REKVALIFIKAČNÍ KURZY  <>  PROGRAMOVÁNÍ  <>  IT KARIÉRA
- *
- * Tento zdrojový kód je součástí profesionálních IT kurzů na
- * WWW.ITNETWORK.CZ
- *
- * Kód spadá pod licenci PRO obsahu a vznikl díky podpoře
- * našich členů. Je určen pouze pro osobní užití a nesmí být šířen.
- * Více informací na http://www.itnetwork.cz/licence
- */
-
-using Invoices.Data.Models;
+﻿using Invoices.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.Metrics;
 using System.IO;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Invoices.Data;
 
-public class InvoicesDbContext : DbContext
+public class InvoicesDbContext : IdentityDbContext // if Identity, add IdentityDbContext<Person>
 {
     public DbSet<Person>? Persons { get; set; }
     public DbSet<Invoice>? Invoices { get; set; }
@@ -40,7 +19,7 @@ public class InvoicesDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        AddTestingData(modelBuilder);
+        //AddTestingData(modelBuilder);
 
         modelBuilder.Entity<Invoice>()
             .Property(x => x.Price)

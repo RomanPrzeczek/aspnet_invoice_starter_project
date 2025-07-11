@@ -1,27 +1,7 @@
-﻿/*  _____ _______         _                      _
- * |_   _|__   __|       | |                    | |
- *   | |    | |_ __   ___| |___      _____  _ __| | __  ___ ____
- *   | |    | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / / __|_  /
- *  _| |_   | | | | |  __/ |_ \ V  V / (_) | |  |   < | (__ / /
- * |_____|  |_|_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_(_)___/___|
- *
- *                      ___ ___ ___
- *                     | . |  _| . |  LICENCE
- *                     |  _|_| |___|
- *                     |_|
- *
- *    REKVALIFIKAČNÍ KURZY  <>  PROGRAMOVÁNÍ  <>  IT KARIÉRA
- *
- * Tento zdrojový kód je součástí profesionálních IT kurzů na
- * WWW.ITNETWORK.CZ
- *
- * Kód spadá pod licenci PRO obsahu a vznikl díky podpoře
- * našich členů. Je určen pouze pro osobní užití a nesmí být šířen.
- * Více informací na http://www.itnetwork.cz/licence
- */
-
-using Invoices.Api.Interfaces;
+﻿using Invoices.Api.Interfaces;
 using Invoices.Api.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Invoices.Api.Controllers;
@@ -31,11 +11,13 @@ namespace Invoices.Api.Controllers;
 public class PersonsController : ControllerBase
 {
     private readonly IPersonManager personManager;
+    private readonly ILogger<PersonsController> logger;
 
 
-    public PersonsController(IPersonManager personManager)
+    public PersonsController(IPersonManager personManager, ILogger<PersonsController> logger)
     {
         this.personManager = personManager;
+        this.logger = logger;
     }
 
 
@@ -66,31 +48,74 @@ public class PersonsController : ControllerBase
         return Ok(statistics);
     }
 
-
+/*    [Authorize(Roles = UserRoles.Admin)]
     [HttpPost("persons")]
     public IActionResult AddPerson([FromBody] PersonDto person)
     {
         PersonDto? createdPerson = personManager.AddPerson(person);
         return StatusCode(StatusCodes.Status201Created, createdPerson);
     }
+*/
 
-    [HttpDelete("persons/{personId}")]
-    public IActionResult DeletePerson(uint personId)
+
+    [Authorize]
+    [HttpPost("persons")]
+    public async Task<IActionResult> AddPerson([FromBody] PersonDto personDto, [FromServices] UserManager<IdentityUser> userManager)
     {
+        var user = await userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+
+        personDto.IdentityUserId = user.Id;
+
+        var result = personManager.AddPerson(personDto);
+        return Ok(result);
+    }
+
+
+
+    [Authorize]
+    [HttpDelete("persons/{personId}")]
+    public async Task<IActionResult>DeletePerson(uint personId, [FromServices] UserManager<IdentityUser> userManager)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+
+        PersonDto? person = personManager.GetPerson(personId);
+        if (person == null) return NotFound();
+
+        if (!User.IsInRole(UserRoles.Admin) && person.IdentityUserId != user.Id)
+        {
+            return Forbid();
+        }
+
         personManager.DeletePerson(personId);
         return NoContent();
     }
 
-    [HttpPut("persons/{personId}")]
-    public IActionResult UpdatePerson(uint personId, [FromBody] PersonDto person)
+    [Authorize]
+    [HttpPut("persons/{id}")]
+    public async Task<IActionResult> UpdatePerson(
+        uint id,
+        [FromBody] PersonDto personDto,
+        [FromServices] UserManager<IdentityUser> userManager)
     {
-        PersonDto? updatedPerson = personManager.UpdatePerson(personId,person);
+        var user = await userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
 
-        if (updatedPerson is null)
-        {
+        var existingPerson = personManager.GetPerson(id);
+        if (existingPerson == null)
             return NotFound();
-        }
 
-        return Ok(updatedPerson);
+        if (!User.IsInRole(UserRoles.Admin) && existingPerson.IdentityUserId != user.Id)
+            return Forbid();
+
+        // Zajistí, že nově přidaný záznam má správného vlastníka
+        personDto.IdentityUserId = user.Id;
+
+        var updatedDto = personManager.UpdatePerson(id, personDto);
+        if (updatedDto == null)
+            return BadRequest("Update failed.");
+
+        return Ok(updatedDto);
     }
 }

@@ -70,7 +70,7 @@ namespace Invoices.Data.Migrations
                         principalColumn: "PersonId");
                 });
 
-            migrationBuilder.InsertData(
+/*            migrationBuilder.InsertData(
                 table: "Persons",
                 columns: new[] { "PersonId", "AccountNumber", "BankCode", "City", "Country", "Hidden", "Iban", "IdentificationNumber", "Mail", "Name", "Note", "Street", "TaxNumber", "Telephone", "Zip" },
                 values: new object[,]
@@ -78,7 +78,7 @@ namespace Invoices.Data.Migrations
                     { 1m, "12345678", "5500", "Praha", 0, false, "CZ0801000000001234567899", "CZ12345678", "redakce@itnetwork.cz", "ITnetwork s.r.o.", "Největší IT akademie v Česku.", "Havlíčkovo náměstí 290/16, Nové Město (Praha 2)", "CZ14025582", "+420 123 123 123", "120 00" },
                     { 2m, "12345678", "0100", "Praha", 0, false, "CZ0801000000001234560000", "CZ12345679", "romino@example.cz", "Romino", "Student největší IT akademie v Česku.", "Havlíčkovo náměstí 300/30, Nové Město (Praha 2)", "CZ14025583", "+420 123 123 456", "120 00" }
                 });
-
+*/
             migrationBuilder.CreateIndex(
                 name: "IX_Invoices_BuyerId",
                 table: "Invoices",

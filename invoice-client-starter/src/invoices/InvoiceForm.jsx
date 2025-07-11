@@ -31,7 +31,13 @@ const InvoiceForm = () => {
 
     useEffect(() => {
         if (id) {
-            apiGet("/api/invoices/" + id).then((data) => setInvoice(data));
+            apiGet("/api/invoices/" + id).then((data) => {
+                setInvoice({
+                    ...data,
+                    seller: data.seller?._id ?? "", // object to string ID
+                    buyer: data.buyer?._id ?? "",
+                })
+            });
         }
     }, [id]);
     
@@ -42,7 +48,6 @@ const InvoiceForm = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
     
-        // Validace před odesláním
         if (!invoice.seller || !invoice.buyer) {
             setError("Prosím vyberte dodavatele i odběratele.");
             setSent(true);
@@ -52,8 +57,8 @@ const InvoiceForm = () => {
     
         const invoiceToSend = {
             ...invoice,
-            seller: typeof invoice.seller === "object" ? invoice.seller : { _id: Number(invoice.seller) },
-            buyer: typeof invoice.buyer === "object" ? invoice.buyer : { _id: Number(invoice.buyer) }
+            seller: { _id: Number(invoice.seller) }, // back to object
+            buyer: { _id: Number(invoice.buyer) }
         };
         
     
