@@ -106,16 +106,20 @@ public class PersonsController : ControllerBase
         if (existingPerson == null)
             return NotFound();
 
-        if (!User.IsInRole(UserRoles.Admin) && existingPerson.IdentityUserId != user.Id)
-            return Forbid();
+        /*        if (!User.IsInRole(UserRoles.Admin) && existingPerson.IdentityUserId != user.Id)
+                    return Forbid();
+        */
 
-        // Zajistí, že nově přidaný záznam má správného vlastníka
-        personDto.IdentityUserId = user.Id;
+        if (User.IsInRole(UserRoles.Admin) || existingPerson.IdentityUserId == user.Id)
+        {
+            personDto.IdentityUserId = user.Id;
 
-        var updatedDto = personManager.UpdatePerson(id, personDto);
-        if (updatedDto == null)
-            return BadRequest("Update failed.");
+            var updatedDto = personManager.UpdatePerson(id, personDto);
+            if (updatedDto == null)
+                return BadRequest("Update failed.");
 
-        return Ok(updatedDto);
+            return Ok(updatedDto);
+        }
+        else return Forbid();
     }
 }

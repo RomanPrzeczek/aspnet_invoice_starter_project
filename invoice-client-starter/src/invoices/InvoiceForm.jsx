@@ -1,4 +1,4 @@
-﻿import React, {useEffect, useState} from "react";
+﻿import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 
 import {apiGet, apiPost, apiPut} from "../utils/api";
@@ -57,8 +57,10 @@ const InvoiceForm = () => {
     
         const invoiceToSend = {
             ...invoice,
-            seller: { _id: Number(invoice.seller) }, // back to object
-            buyer: { _id: Number(invoice.buyer) }
+            // seller: { _id: Number(invoice.seller) }, // back to object
+            // buyer: { _id: Number(invoice.buyer) }
+            seller: { _id: invoice.seller },
+            buyer: { _id: invoice.buyer }
         };
         
     
@@ -193,13 +195,17 @@ const InvoiceForm = () => {
                     name="seller"
                     label="Dodavatel"
                     prompt="Vyberte osobu"
-                    value={id ? invoice.seller?._id : invoice.seller || ""}
+                    //value={id ? invoice.seller?._id : invoice.seller || ""}
+                    value={invoice.seller}
                     items={personsListState}
+                    // handleChange={(e) => {
+                    //     setInvoice({
+                    //         ...invoice,
+                    //         seller: e.target.value ? { _id: Number(e.target.value) } : ""
+                    //     });
+                    // }}
                     handleChange={(e) => {
-                        setInvoice({
-                            ...invoice,
-                            seller: e.target.value ? { _id: Number(e.target.value) } : ""
-                        });
+                        setInvoice({ ...invoice, seller: Number(e.target.value) });
                     }}
                 />
 
@@ -210,13 +216,17 @@ const InvoiceForm = () => {
                     name="buyer"
                     label="Odběratel"
                     prompt="Vyberte osobu"
-                    value={id ? invoice.buyer?._id : invoice.buyer || ""}
+                    //value={id ? invoice.buyer?._id : invoice.buyer || ""}
+                    value={invoice.buyer}
                     items={personsListState}
+                    // handleChange={(e) => {
+                    //     setInvoice({
+                    //         ...invoice,
+                    //         buyer: e.target.value ? { _id: Number(e.target.value) } : ""
+                    //     });
+                    // }}
                     handleChange={(e) => {
-                        setInvoice({
-                            ...invoice,
-                            buyer: e.target.value ? { _id: Number(e.target.value) } : ""
-                        });
+                        setInvoice({ ...invoice, buyer: Number(e.target.value) });
                     }}
                 />
 
