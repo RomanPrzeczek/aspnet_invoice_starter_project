@@ -20,9 +20,9 @@
  * Více informací na http://www.itnetwork.cz/licence
  */
 
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-
+import { useAuth } from "../auth/AuthContext";
 import {apiGet, apiPost, apiPut} from "../utils/api";
 
 import InputField from "../components/InputField";
@@ -32,6 +32,7 @@ import FlashMessage from "../components/FlashMessage";
 import Country from "./Country";
 
 const PersonForm = () => {
+    const {token} = useAuth();
     const navigate = useNavigate();
     const {id} = useParams();
     const [person, setPerson] = useState({
@@ -55,14 +56,14 @@ const PersonForm = () => {
 
     useEffect(() => {
         if (id) {
-            apiGet("/api/persons/" + id).then((data) => setPerson(data));
+            apiGet("/api/persons/" + id, {}, token).then((data) => setPerson(data));
         }
-    }, [id]);
+    }, [id,token]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        (id ? apiPut("/api/persons/" + id, person) : apiPost("/api/persons", person))
+        (id ? apiPut("/api/persons/" + id, person, token) : apiPost("/api/persons", person, token))
             .then((data) => {
                 setSent(true);
                 setSuccess(true);
