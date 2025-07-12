@@ -92,4 +92,10 @@ public class PersonManager : IPersonManager
 
         return result;
     }
+
+    public bool HasActivePerson(string identityUserId)
+    {
+        return GetAllPersons()
+            .Any(p => p.IdentityUserId == identityUserId);
+    }
 }

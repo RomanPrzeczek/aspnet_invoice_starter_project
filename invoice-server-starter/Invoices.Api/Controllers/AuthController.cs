@@ -139,11 +139,20 @@ namespace Invoices.Api.Controllers
                 return Unauthorized();
             }
 
+            // 🛡 inactive person checking
+            var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+            if (!isAdmin && !_personManager.HasActivePerson(user.Id))
+            {
+                return Unauthorized("Účet byl deaktivován.");
+            }
+
+
             var roles = await _userManager.GetRolesAsync(user);
             var token = GenerateJwtToken(user, roles);
 
             return Ok(new { token });
         }
+
 
         /// <summary>
         /// Logs out the currently authenticated user.

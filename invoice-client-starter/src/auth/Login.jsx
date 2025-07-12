@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 const Login = () => {
@@ -61,6 +61,12 @@ const Login = () => {
                     Přihlásit se
                 </button>
             </form>
+            <p className="mt-3">
+                Ještě nemáte účet?{" "}
+                <Link to="/register" className="btn btn-link p-0 align-baseline">
+                    Zaregistrujte se zde
+                </Link>
+            </p>
         </div>
     );
 };

@@ -39,7 +39,7 @@ const AppLayout = () => {
             <div>
               <strong>Přihlášen:</strong> {user?.email} {user?.isAdmin ? "(admin)" : ""}
             </div>
-            <button className="btn btn-sm btn-outline-danger" onClick={logout}>
+            <button className="btn btn-sm btn-outline-danger ms-3" onClick={logout}>
               Odhlásit se
             </button>
           </div>

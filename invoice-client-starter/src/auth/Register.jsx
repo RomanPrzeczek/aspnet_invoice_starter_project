@@ -117,10 +117,8 @@ const Register = () => {
                 <div className="mb-3">
                     <label>Země (Country enum)</label>
                     <select className="form-select" name="country" value={formData.country} onChange={handleChange}>
-                        <option value="CzechRepublic">Česká republika</option>
-                        <option value="Slovakia">Slovensko</option>
-                        <option value="Germany">Německo</option>
-                        {/* přidej další možnosti podle enumu Country */}
+                        <option value="CZECHIA">Česká republika</option>
+                        <option value="SLOVAKIA">Slovensko</option>
                     </select>
                 </div>
 

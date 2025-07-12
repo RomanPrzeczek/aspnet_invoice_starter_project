@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }) => {
                 isLoggedIn: !!token,
                 login,
                 logout,
+                isAdmin: user?.isAdmin
             }}
         >
             {children}

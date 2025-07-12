@@ -2,8 +2,10 @@
 
 import {Link} from "react-router-dom";
 import PropTypes from "prop-types";
+import { useAuth } from "../auth/AuthContext";
 
 const PersonTable = ({label, items, deletePerson}) => {
+    const {isAdmin, user} = useAuth();
     return (
         <div>
             <p>
@@ -25,6 +27,8 @@ const PersonTable = ({label, items, deletePerson}) => {
                         <td>{item.name}</td>
                         <td>
                             <div className="btn-group">
+                                {(isAdmin || user?._id === item.identityUserId)&&(
+                                <>
                                 <Link
                                     to={"/persons/show/" + item._id}
                                     className="btn btn-sm btn-info"
@@ -37,21 +41,27 @@ const PersonTable = ({label, items, deletePerson}) => {
                                 >
                                     Upravit
                                 </Link>
+                                </>
+                                )}
+                                {isAdmin && (
                                 <button
                                     onClick={() => deletePerson(item._id)}
                                     className="btn btn-sm btn-danger"
                                 >
                                     Odstranit
                                 </button>
+                                )}
                             </div>
                         </td>
                     </tr>
                 ))}
                 </tbody>
             </table>
+            {isAdmin && (
             <Link to={"/persons/create"} className="btn btn-success">
                 Nová osoba
             </Link>
+            )}
         </div>
     );
 };

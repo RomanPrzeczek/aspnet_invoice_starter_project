@@ -32,4 +32,5 @@ public interface IPersonManager
     PersonDto? GetPerson(ulong id);
     PersonDto? UpdatePerson(uint personId, PersonDto personDto);
     IEnumerable<object> GetPersonStatistics();
+    bool HasActivePerson(string identityUserId);
 }
