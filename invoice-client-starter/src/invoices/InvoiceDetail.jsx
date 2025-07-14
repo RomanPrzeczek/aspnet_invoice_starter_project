@@ -20,7 +20,7 @@
  * Více informací na http://www.itnetwork.cz/licence
  */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiGet } from "../utils/api"; // uprav podle umístění souboru
 

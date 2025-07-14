@@ -1,9 +1,16 @@
-#root {
+/* #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   padding-bottom: 4em; 
   text-align: center;
+} */
+
+#root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left; /* nebo "initial", pokud chceš ponechat styl dle komponent */
 }
 
 .logo {

@@ -1,13 +1,11 @@
 ﻿import {useEffect, useState} from "react";
-
 import {apiDelete, apiGet} from "../utils/api";
 
 import InvoiceTable from "./InvoiceTable";
-import InvoiceFilterModal from "../components/InvoiceFilterModal";
+import InvoiceFilterBar from "../components/InvoiceFilterBar";
 
 const InvoiceIndex = () => {
     const [invoices, setInvoices] = useState([]);
-    const [showFilter, setShowFilter] = useState(false);
     const [filters, setFilters] = useState({
         buyerId: '',
         sellerId: '',
@@ -20,28 +18,28 @@ const InvoiceIndex = () => {
     const [filterActive, setFilterActive] = useState(false);
 
     useEffect(() => {
-        apiGet("/api/invoices").then((data) => setInvoices(data));
+        fetchInvoices();
         apiGet("/api/persons").then((data) => setPersons(data));
     }, []);
 
     /// <summary>
     /// Handles query params for BE filtering.
     /// </summary>
-    const handleApplyFilter = async () => {
-        const query = new URLSearchParams();
-        Object.entries(filters).forEach(([key, val]) => {
-            if (val !== '') {
-                query.append(key, val);
-            }
-        });
+    const fetchInvoices = async () => {
+    let query = [];
 
-        try {
-            const data = await apiGet(`/api/invoices?${query.toString()}`);
-            setInvoices(data);
-            setFilterActive(true);
-        } catch (err) {
-            alert("Chyba při filtrování: "+err.message);
-        }
+    if (filters.buyerId) query.push(`buyerId=${filters.buyerId}`);
+    if (filters.sellerId) query.push(`sellerId=${filters.sellerId}`);
+    if (filters.product) query.push(`product=${filters.product}`);
+    if (filters.minPrice) query.push(`minPrice=${filters.minPrice}`);
+    if (filters.maxPrice) query.push(`maxPrice=${filters.maxPrice}`);
+    if (filters.limit) query.push(`limit=${filters.limit}`);
+
+    const queryString = query.length > 0 ? `?${query.join("&")}` : "";
+
+    const data = await apiGet(`/api/invoices${queryString}`);
+    setInvoices(data);
+    setFilterActive(query.length > 0);
     };
 
     const deleteInvoice = async (id) => {
@@ -70,54 +68,14 @@ const InvoiceIndex = () => {
 
     return (
         <div>
-            {/* <button className="btn btn-outline-primary mb-3" onClick={() => setShowFilter(true)}>
-                Filtruj faktury
-            </button> */}
-
-            <div className="d-flex mb-3 gap-2">
-                <button className="btn btn-primary" onClick={() => setShowFilter(true)}>
-                    {filterActive ? "Filtrováno 🔍" : "Filtruj faktury"}
-                </button>
-
-                {filterActive && (
-                    <button className="btn btn-outline-secondary" onClick={clearFilters}>
-                        Zrušit filtr
-                    </button>
-                )}
-                </div>
-
-
-            {showFilter && (
-                <InvoiceFilterModal
-                    key={Date.now()}
-                    filters={filters}
-                    setFilters={setFilters}
-                    persons={persons}
-                    onApply={() => {
-                        handleApplyFilter();
-                        setShowFilter(false);
-                        document.body.classList.remove('modal-open');
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                    }}
-                    onReset={() => {
-                        setFilters({
-                            buyerId: '',
-                            sellerId: '',
-                            product: '',
-                            minPrice: '',
-                            maxPrice: '',
-                            limit: ''
-                        });
-
-                        apiGet("/api/invoices").then(data => setInvoices(data));
-
-                        setShowFilter(false);
-                        document.body.classList.remove('modal-open');
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                    }}
-                    setShowFilter={setShowFilter}
-                />
-            )}
+            <InvoiceFilterBar 
+                filters={filters}
+                setFilters={setFilters}
+                persons={persons}
+                onApply={fetchInvoices}
+                onClear={clearFilters}
+                filterActive={filterActive}
+            />
 
             <h1>Seznam faktur</h1>
             <InvoiceTable
