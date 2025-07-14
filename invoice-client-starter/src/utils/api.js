@@ -22,7 +22,7 @@ export const apiGet = (url, params = {}, token = null) => {
         Object.entries(params).filter(([_, value]) => value != null)
     );
 
-    const apiUrl = `${url}?${new URLSearchParams(filteredParams)}`;
+    const apiUrl = `${url}${new URLSearchParams(filteredParams)}`;
     const headers = token
         ? { Authorization: `Bearer ${token}` } // 🟢 JWT token
         : {};
