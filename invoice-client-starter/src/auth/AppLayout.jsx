@@ -25,7 +25,7 @@ const AppLayout = () => {
   },[isLoggedIn]);
 
   return (
-    <div className="container">
+    <div className="container mt-4 mb-4">
       <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4">
         <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-flex flex-row gap-3">
           <li className="nav-item">
