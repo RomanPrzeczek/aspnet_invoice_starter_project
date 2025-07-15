@@ -8,6 +8,7 @@ import InvoiceIndex from "../invoices/InvoiceIndex";
 import InvoiceDetail from "../invoices/InvoiceDetail";
 import InvoiceForm from "../invoices/InvoiceForm";
 import StatisticsPage from "../components/statistics/StatisticsPage";
+import AboutApp from "../components/AboutApp";
 
 import Login from "./Login";
 import Register from "./Register";
@@ -19,6 +20,10 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isAboutApp = location.pathname === "/aboutApp";
+  const toggleRoute = isAboutApp ? "/login" : "/aboutApp";
+  const toggleLabel = isAboutApp ? "/ Přihlášení" : "/ O aplikaci";
+
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login");
@@ -29,44 +34,59 @@ const AppLayout = () => {
     <>
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow">
         <div className="container-fluid">
-          <Link to="/persons" className="navbar-brand fw-bold">💼 InvoiceApp</Link>
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span className="navbar-toggler-icon"></span>
-          </button>
-
+          {!isLoggedIn && (
+            <div>
+              <Link to={toggleRoute} className="navbar-brand fw-bold">
+                InvoiceApp<span className="text-light ms-2">{toggleLabel}</span>
+              </Link>
+              <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span className="navbar-toggler-icon"></span>
+              </button>
+            </div>
+          )}
           <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-flex gap-2">
-              <li className="nav-item">
-                <Link
-                  to="/persons"
-                  className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                    location.pathname.startsWith("/persons") ? "active" : ""
-                  }`}
-                >
-                  👤 Osoby
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="/invoices"
-                  className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                    location.pathname.startsWith("/invoices") ? "active" : ""
-                  }`}
-                >
-                  🧾 Faktury
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  to="/statistics"
-                  className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                    location.pathname.startsWith("/statistics") ? "active" : ""
-                  }`}
-                >
-                  📊 Statistiky
-                </Link>
-              </li>
-            </ul>
+             {isLoggedIn &&(
+              <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-flex gap-2">
+                <li className="nav-item">
+                  <Link to="/aboutApp" className="navbar-brand fw-bold">
+                    InvoiceApp <span className="text-light ms-2">/ O aplikaci</span>
+                  </Link>
+                  <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span className="navbar-toggler-icon"></span>
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    to="/persons"
+                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                      location.pathname.startsWith("/persons") ? "active" : ""
+                    }`}
+                  >
+                    👤 Osoby
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    to="/invoices"
+                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                      location.pathname.startsWith("/invoices") ? "active" : ""
+                    }`}
+                  >
+                    🧾 Faktury
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    to="/statistics"
+                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                      location.pathname.startsWith("/statistics") ? "active" : ""
+                    }`}
+                  >
+                    📊 Statistiky
+                  </Link>
+                </li>
+              </ul>
+          )}
             {isLoggedIn && (
               <span className="navbar-text me-3 text-white">
                 Přihlášen: {user?.email} {user?.isAdmin ? "(admin)" : ""}
@@ -127,6 +147,7 @@ const AppLayout = () => {
                 }
               />
               <Route path="*" element={<Navigate to="/persons" />} />
+              <Route path="/aboutApp" element={<AboutApp />} />
             </Routes>
           </div>
         </div>
