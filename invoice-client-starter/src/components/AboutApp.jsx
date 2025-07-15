@@ -16,10 +16,10 @@ const AboutApp = () => {
                 - registraci, login, logout uživatelů
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - řehledy a detail uživatelů a faktur
+                - přehledy a detail uživatelů a faktur
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - úpravu a mazání uživateů a faktur
+                - úpravu a mazání uživatelů a faktur
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
                 - responzivní, mobile-first design
@@ -34,33 +34,34 @@ const AboutApp = () => {
 
             <h4 className="mb-3">
                 <i className="bi bi-link-45deg me-2"></i>
-                Pro vývojáře
+                Dokumentace app (GitHub)
             </h4>
 
             <ul className="list-group text-start mb-4">
                 <li className="list-group-item">
                     <a href="https://github.com/RomanPrzeczek/aspnet_invoice_starter_project" target="_blank">
-                        <i className="bi bi-github me-2"></i>GitHub
+                        <i className="bi bi-github me-2"></i>Code
                     </a>
                 </li>
                 <li className="list-group-item">
+                    <a href="https://github.com/RomanPrzeczek/aspnet_invoice_starter_project/blob/main/README.md" target="blank">
                         <i className="bi bi-file-earmark-text me-2"></i> Readme
+                    </a>
                 </li>
                 <li className="list-group-item">
-                        <i className="bi bi-file-earmark-code me-2"></i> TestReadme
+                    <a href="https://github.com/RomanPrzeczek/aspnet_invoice_starter_project/blob/main/API_REFERENCE.md" target="blank">
+                        <i className="bi bi-file-earmark-code me-2"></i> API reference
+                    </a>
                 </li>
-            </ul>
-
-            <h5 className="mb-2"><i className="bi bi-diagram-3-fill me-2"></i>Diagramy</h5>
-            <ul className="list-group text-start">
-                <li className="list-group-item">
-                        <i className="bi bi-image me-2"></i>DiagramUseCase
+                                <li className="list-group-item">
+                    <a href="https://github.com/RomanPrzeczek/aspnet_invoice_starter_project/blob/main/ASCIIdataModel.md" target="blank">
+                        <i className="bi bi-file-earmark-code me-2"></i> ASCII data model
+                    </a>
                 </li>
-                <li className="list-group-item">
-                        <i className="bi bi-image me-2"></i>DiagramERD
-                </li>
-                <li className="list-group-item">
-                        <i className="bi bi-image me-2"></i>DiagramAppStructure
+                                <li className="list-group-item">
+                    <a href="https://github.com/RomanPrzeczek/aspnet_invoice_starter_project/blob/main/UseCaseDiagram.md" target="blank">
+                        <i className="bi bi-file-earmark-code me-2"></i> Use case diagram
+                    </a>
                 </li>
             </ul>
         </div>
