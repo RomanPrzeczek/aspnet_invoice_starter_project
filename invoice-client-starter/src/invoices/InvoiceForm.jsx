@@ -1,5 +1,5 @@
 ﻿import {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams, Link} from "react-router-dom";
 
 import {apiGet, apiPost, apiPut} from "../utils/api";
 
@@ -229,9 +229,12 @@ const InvoiceForm = () => {
                         setInvoice({ ...invoice, buyer: Number(e.target.value) });
                     }}
                 />
-
-
-                <input type="submit" className="btn btn-primary" value="Uložit"/>
+                <div className="d-flex justify-content-between mt-4">
+                    <Link to={"/invoices"} className="btn btn-secondary mt-2">
+                        Zpět na přehled faktur
+                    </Link>
+                    <input type="submit" className="btn btn-primary" value="Uložit"/>
+                </div>
             </form>
         </div>
     );

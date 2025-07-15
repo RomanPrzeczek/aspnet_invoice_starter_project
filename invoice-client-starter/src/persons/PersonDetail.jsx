@@ -1,27 +1,5 @@
-/*  _____ _______         _                      _
- * |_   _|__   __|       | |                    | |
- *   | |    | |_ __   ___| |___      _____  _ __| | __  ___ ____
- *   | |    | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / / __|_  /
- *  _| |_   | | | | |  __/ |_ \ V  V / (_) | |  |   < | (__ / /
- * |_____|  |_|_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_(_)___/___|
- *                                _
- *              ___ ___ ___ _____|_|_ _ _____
- *             | . |  _| -_|     | | | |     |  LICENCE
- *             |  _|_| |___|_|_|_|_|___|_|_|_|
- *             |_|
- *
- *   PROGRAMOVÁNÍ  <>  DESIGN  <>  PRÁCE/PODNIKÁNÍ  <>  HW A SW
- *
- * Tento zdrojový kód je součástí výukových seriálů na
- * IT sociální síti WWW.ITNETWORK.CZ
- *
- * Kód spadá pod licenci prémiového obsahu a vznikl díky podpoře
- * našich členů. Je určen pouze pro osobní užití a nesmí být šířen.
- * Více informací na http://www.itnetwork.cz/licence
- */
-
-import React, {useEffect, useState} from "react";
-import { useParams } from "react-router-dom";
+import {useEffect, useState} from "react";
+import { useParams, Link } from "react-router-dom";
 import { apiGet } from "../utils/api"; // uprav podle umístění souboru
 
 import Country from "./Country";
@@ -154,7 +132,9 @@ const PersonDetail = () => {
                     </tbody>
                 </table>
             </div>
-
+            <Link to={"/persons"} className="btn btn-secondary mt-2">
+                Zpět na přehled osob
+            </Link>
         </>
     );
 };

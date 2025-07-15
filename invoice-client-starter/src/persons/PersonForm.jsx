@@ -1,27 +1,5 @@
-/*  _____ _______         _                      _
- * |_   _|__   __|       | |                    | |
- *   | |    | |_ __   ___| |___      _____  _ __| | __  ___ ____
- *   | |    | | '_ \ / _ \ __\ \ /\ / / _ \| '__| |/ / / __|_  /
- *  _| |_   | | | | |  __/ |_ \ V  V / (_) | |  |   < | (__ / /
- * |_____|  |_|_| |_|\___|\__| \_/\_/ \___/|_|  |_|\_(_)___/___|
- *                                _
- *              ___ ___ ___ _____|_|_ _ _____
- *             | . |  _| -_|     | | | |     |  LICENCE
- *             |  _|_| |___|_|_|_|_|___|_|_|_|
- *             |_|
- *
- *   PROGRAMOVÁNÍ  <>  DESIGN  <>  PRÁCE/PODNIKÁNÍ  <>  HW A SW
- *
- * Tento zdrojový kód je součástí výukových seriálů na
- * IT sociální síti WWW.ITNETWORK.CZ
- *
- * Kód spadá pod licenci prémiového obsahu a vznikl díky podpoře
- * našich členů. Je určen pouze pro osobní užití a nesmí být šířen.
- * Více informací na http://www.itnetwork.cz/licence
- */
-
 import {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams, Link} from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import {apiGet, apiPost, apiPut} from "../utils/api";
 
@@ -271,8 +249,12 @@ const PersonForm = () => {
                     }}
                     checked={Country.SLOVAKIA === person.country}
                 />
-
-                <input type="submit" className="btn btn-primary" value="Uložit"/>
+                <div className="d-flex justify-content-between mt-4">
+                    <Link to={"/persons"} className="btn btn-secondary mt-2">
+                        Zpět na přehled osob
+                    </Link>
+                    <input type="submit" className="btn btn-primary" value="Uložit"/>
+                </div>
             </form>
         </div>
     );
