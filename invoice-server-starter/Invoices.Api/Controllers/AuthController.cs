@@ -133,24 +133,35 @@ namespace Invoices.Api.Controllers
         ///JWT authentication endpoint for user login.
         public async Task<IActionResult> Login([FromBody] AuthDto authDto)
         {
-            var user = await _userManager.FindByEmailAsync(authDto.Email);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, authDto.Password))
+            Console.WriteLine("👉 Login endpoint triggered.");
+
+            try
             {
-                return Unauthorized();
-            }
+                var user = await _userManager.FindByEmailAsync(authDto.Email);
+                if (user == null || !await _userManager.CheckPasswordAsync(user, authDto.Password))
+                {
+                    return Unauthorized();
+                }
 
-            // 🛡 inactive person checking
-            var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-            if (!isAdmin && !_personManager.HasActivePerson(user.Id))
+                // 🛡 inactive person checking
+                var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+                if (!isAdmin && !_personManager.HasActivePerson(user.Id))
+                {
+                    return Unauthorized("Účet byl deaktivován.");
+                }
+
+
+                var roles = await _userManager.GetRolesAsync(user);
+                var token = GenerateJwtToken(user, roles);
+
+                return Ok(new { token });
+            }
+            catch (Exception ex)
             {
-                return Unauthorized("Účet byl deaktivován.");
+                Console.WriteLine($"❌ Login error: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                throw;
             }
-
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var token = GenerateJwtToken(user, roles);
-
-            return Ok(new { token });
         }
 
 
