@@ -11,6 +11,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Invoices.Data\Invoices.Data.csproj" />
+    <None Update="appsettings.Production.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
