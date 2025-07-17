@@ -4,6 +4,7 @@
 .env
 .env.*
 secrets.json
+appsettings.json
 appsettings.Production.json
 appsettings.Development.json
 *.pfx
