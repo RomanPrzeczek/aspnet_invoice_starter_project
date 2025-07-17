@@ -62,6 +62,17 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 
+foreach (var kv in builder.Configuration.AsEnumerable())
+{
+    Console.WriteLine($"{kv.Key} = {kv.Value}");
+}
+
+if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer))
+{
+    Console.WriteLine("❌ JWT konfigurace chybí. Jwt:Key nebo Jwt:Issuer nejsou definovány.");
+    throw new InvalidOperationException("JWT konfigurace chybí.");
+}
+
 // Add Authentication (před AddIdentity, nebo hned za tím)
 builder.Services.AddAuthentication(options =>
 {
