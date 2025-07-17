@@ -17,9 +17,10 @@ Fakturační webová aplikace, která umožňuje správu osob, vystavování fak
   - ASP.NET Core Web API (.NET 8)
   - Entity Framework Core
   - AutoMapper
-  - MSSQL LocalDB
   - Role-based autentizace s ASP.NET Identity
 
+- **Database**
+  - AzureSQL (MSSQL) Database-as-a-Service
 ---
 
 ## 🧱 Struktura projektu
@@ -56,6 +57,8 @@ User – může upravovat pouze své osoby a faktury
 - Statistiky a grafy (Roční součty, počet faktur na osobu)
 
 ## Plánované rozšíření
-- Nasazení na Railway nebo Azure s MSSQL
+- Nasazení DB ➡ Azure:  ✔ 16.7.25
+- Nasazení BE ➡ Azure
+- Nasazení FE ➡ Azure
 - CI/CD workflow s GitHub Actions
 - Automatizované testy (unit, integrační, UI – Playwright nebo Cypress)

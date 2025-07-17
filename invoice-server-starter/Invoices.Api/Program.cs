@@ -16,7 +16,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("LocalInvoicesConnection");
+var connectionString = builder.Configuration.GetConnectionString("AzureConnection"); // was .GetConnectionString("LocalInvoicesConnection")
 
 // Configuration of DB
 builder.Services.AddDbContext<InvoicesDbContext>(options =>
