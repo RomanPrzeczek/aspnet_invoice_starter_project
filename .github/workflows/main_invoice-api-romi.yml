@@ -35,19 +35,20 @@ jobs:
           name: .net-app
           path: published
 
-  deploy:
+    deploy:
     runs-on: windows-latest
     needs: build
 
     permissions:
-      id-token: write # Required for requesting the JWT
-      contents: read  # Required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
+          path: ./publish_output
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -57,9 +58,8 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_391E61CE2BDC402B8FA49E00698C32F5 }}
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'invoice-api-romi'
           slot-name: 'Production'
-          package: ./.net-app
+          package: ./publish_output
