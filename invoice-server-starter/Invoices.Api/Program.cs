@@ -158,7 +158,16 @@ using (var scope = app.Services.CreateScope())
     await CreateAllRoles(roleManager);
 }
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ CHYBA při startu aplikace: {ex.Message}");
+    Console.WriteLine(ex.StackTrace);
+    throw; // důležité pro Azure, aby vrátil 500
+}
 
 /// <summary>
 /// Helper method to create all roles defined in UserRoles class.
