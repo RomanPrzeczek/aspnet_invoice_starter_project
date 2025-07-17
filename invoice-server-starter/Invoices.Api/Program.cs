@@ -130,6 +130,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Výjimka za běhu: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
+        throw;
+    }
+});
+
+
 // Configure the HTTP request pipeline for the authentication and authorization
 app.UseCors(); // Enable CORS for the application
 app.UseAuthentication();
