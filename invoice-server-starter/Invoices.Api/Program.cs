@@ -14,6 +14,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+var logger = LoggerFactory
+    .Create(builder => builder.AddConsole())
+    .CreateLogger("Startup");
+
+logger.LogInformation("🚀 Spouštím aplikaci...");
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("AzureConnection"); // was .GetConnectionString("LocalInvoicesConnection")
@@ -64,12 +70,12 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 
 foreach (var kv in builder.Configuration.AsEnumerable())
 {
-    Console.WriteLine($"{kv.Key} = {kv.Value}");
+    logger.LogInformation($"{kv.Key} = {kv.Value}");
 }
 
 if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer))
 {
-    Console.WriteLine("❌ JWT konfigurace chybí. Jwt:Key nebo Jwt:Issuer nejsou definovány.");
+    logger.LogInformation("❌ JWT konfigurace chybí. Jwt:Key nebo Jwt:Issuer nejsou definovány.");
     throw new InvalidOperationException("JWT konfigurace chybí.");
 }
 
@@ -134,9 +140,9 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<InvoicesDbContext>();
-    Console.WriteLine("✅ Databáze načtena: " + dbContext.Database.GetConnectionString());
+    logger.LogInformation("✅ Databáze načtena: " + dbContext.Database.GetConnectionString());
     var canConnect = await dbContext.Database.CanConnectAsync();
-    Console.WriteLine($"🧪 Can connect to DB: {canConnect}");
+    logger.LogInformation($"🧪 Can connect to DB: {canConnect}");
 }
 
 app.Use(async (context, next) =>
@@ -147,8 +153,8 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Výjimka za běhu: {ex.Message}");
-        Console.WriteLine(ex.StackTrace);
+        logger.LogInformation($"❌ Výjimka za běhu: {ex.Message}");
+        logger.LogInformation(ex.StackTrace);
         throw;
     }
 });
@@ -182,7 +188,7 @@ using (var scope = app.Services.CreateScope())
     // await CreateAllRoles(roleManager);
 }
 
-Console.WriteLine("✅ Aplikace se spouští...");
+logger.LogInformation("✅ Aplikace se spouští...");
 
 try
 {
@@ -190,8 +196,8 @@ try
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"❌ CHYBA při startu aplikace: {ex.Message}");
-    Console.WriteLine(ex.StackTrace);
+    logger.LogInformation($"❌ CHYBA při startu aplikace: {ex.Message}");
+    logger.LogInformation(ex.StackTrace);
     throw; // důležité pro Azure, aby vrátil 500
 }
 
