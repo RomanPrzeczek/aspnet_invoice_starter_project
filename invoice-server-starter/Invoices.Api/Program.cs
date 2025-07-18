@@ -170,8 +170,10 @@ using (var scope = app.Services.CreateScope())
 {
     RoleManager<IdentityRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    await CreateAllRoles(roleManager);
+    // await CreateAllRoles(roleManager);
 }
+
+Console.WriteLine("✅ Aplikace se spouští...");
 
 try
 {
