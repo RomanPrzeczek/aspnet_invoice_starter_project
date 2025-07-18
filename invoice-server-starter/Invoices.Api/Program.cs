@@ -18,6 +18,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("AzureConnection"); // was .GetConnectionString("LocalInvoicesConnection")
 
+// debugging
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<InvoicesDbContext>();
+    Console.WriteLine("✅ Databáze načtena: " + dbContext.Database.GetConnectionString());
+    var canConnect = await dbContext.Database.CanConnectAsync();
+    Console.WriteLine($"🧪 Can connect to DB: {canConnect}");
+}
+
 // Configuration of DB
 builder.Services.AddDbContext<InvoicesDbContext>(options =>
     options.UseSqlServer(connectionString)
