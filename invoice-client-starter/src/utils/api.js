@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 const fetchData = (url, requestOptions) => {
     const apiUrl = `${API_URL}${url}`;
+    console.log("Test of console log.");
     console.log("\n 🌐 VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
 
     return fetch(apiUrl, requestOptions)
