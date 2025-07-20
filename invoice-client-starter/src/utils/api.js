@@ -1,3 +1,4 @@
+// debug comment due to adding git repo environment variable for VITE..URL
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 const fetchData = (url, requestOptions) => {
