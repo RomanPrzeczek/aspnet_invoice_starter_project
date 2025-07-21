@@ -10,9 +10,6 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Test of Login.jsx clog.");
-        console.log("\n 🌐 VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL);
-
         const response = await fetch("/api/auth", {
             method: "POST",
             headers: {

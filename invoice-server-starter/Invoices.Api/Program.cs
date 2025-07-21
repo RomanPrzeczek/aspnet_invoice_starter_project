@@ -126,7 +126,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("https://localhost:5173") // avoid *!
+        policy.WithOrigins(
+            "http://localhost:3000", // React Vite server for production settings test
+            "https://localhost:5173" // React Vite development server
+            )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

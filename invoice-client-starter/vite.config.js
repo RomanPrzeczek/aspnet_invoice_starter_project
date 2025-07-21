@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        'target' : 'https://localhost:7071',
+        'target' : 'https://localhost:7071', 
+        //'target' : 'https://invoice-api-romi-dfftdqhaacbab2h0.westeurope-01.azurewebsites.net',
         changeOrigin: true,
         secure: false
       }

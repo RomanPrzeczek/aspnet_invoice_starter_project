@@ -1,8 +1,8 @@
 ﻿# ============================================
 # 🔒 Sensitive files & environment variables
 # ============================================
-#.env
-#.env.*
+.env
+.env.*
 secrets.json
 appsettings.json
 appsettings.Production.json
