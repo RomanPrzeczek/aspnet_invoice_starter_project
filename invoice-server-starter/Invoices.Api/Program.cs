@@ -127,6 +127,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(
+            "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app", // Railway production server
             "http://localhost:3000", // React Vite server for production settings test
             "https://localhost:5173" // React Vite development server
             )
