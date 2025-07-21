@@ -12,12 +12,14 @@ Fakturační webová aplikace, která umožňuje správu osob, vystavování fak
   - Bootstrap 5
   - JWT autentizace (s AuthContextem)
   - React fetch pro komunikaci s API
+  - nasazeno na Railway.com
 
 - **Backend (ASP.NET Core)**  
   - ASP.NET Core Web API (.NET 8)
   - Entity Framework Core
   - AutoMapper
   - Role-based autentizace s ASP.NET Identity
+  - Azure-Web-App hosting, slinkován s FE a DB
 
 - **Database**
   - AzureSQL (MSSQL) Database-as-a-Service
@@ -56,9 +58,9 @@ User – může upravovat pouze své osoby a faktury
 - CRUD pro faktury (produkt, DPH, splatnost...)
 - Statistiky a grafy (Roční součty, počet faktur na osobu)
 
-## Plánované rozšíření
-- Nasazení DB ➡ Azure:  ✔ 16.7.25
-- Nasazení BE ➡ Azure
-- Nasazení FE ➡ Azure
-- CI/CD workflow s GitHub Actions
-- Automatizované testy (unit, integrační, UI – Playwright nebo Cypress)
+## Rozšíření stav
+- Nasazení DB ➡ AzureSQL:  ✔ 16.7.25
+- Nasazení BE ➡ Azure-Webb-App:  ✔ 17.7.25
+- Nasazení FE ➡ Railway:   ✔ 21.7.25
+- CI/CD workflow s GitHub Actions:   ✔ 16.7.25
+- Automatizované testy (unit, integrační, UI – Playwright nebo Cypress): 🧭
