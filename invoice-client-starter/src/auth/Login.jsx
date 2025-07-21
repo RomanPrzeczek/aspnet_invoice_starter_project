@@ -7,10 +7,12 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const { login } = useAuth();
     const navigate = useNavigate();
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
 
     const handleSubmit = async (e) => {
+        console.log("Z buildu API URL je:", import.meta.env.VITE_API_BASE_URL);
         e.preventDefault();
-        const response = await fetch("/api/auth", {
+        const response = await fetch(`${apiBase}/api/auth`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
