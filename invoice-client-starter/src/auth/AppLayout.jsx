@@ -25,7 +25,7 @@ const AppLayout = () => {
   const toggleLabel = isAboutApp ? "/ Přihlášení" : "/ O aplikaci";
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && location.pathname !== "/aboutApp") {
       navigate("/login");
     }
   }, [isLoggedIn]);
@@ -34,68 +34,65 @@ const AppLayout = () => {
     <>
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow">
         <div className="container-fluid">
-          {!isLoggedIn && (
-            <div>
-              <Link to={toggleRoute} className="navbar-brand fw-bold">
-                InvoiceApp<span className="text-light ms-2">{toggleLabel}</span>
-              </Link>
-              <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span className="navbar-toggler-icon"></span>
-              </button>
-            </div>
-          )}
+          <Link to={toggleRoute} className="navbar-brand fw-bold">
+            InvoiceApp <span className="text-light ms-2">{toggleLabel}</span>
+          </Link>
+
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
           <div className="collapse navbar-collapse" id="navbarNav">
-             {isLoggedIn &&(
-              <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-flex gap-2">
-                <li className="nav-item">
-                  <Link to="/aboutApp" className="navbar-brand fw-bold">
-                    InvoiceApp <span className="text-light ms-2">/ O aplikaci</span>
-                  </Link>
-                  <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span className="navbar-toggler-icon"></span>
-                  </button>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    to="/persons"
-                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                      location.pathname.startsWith("/persons") ? "active" : ""
-                    }`}
-                  >
-                    👤 Osoby
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    to="/invoices"
-                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                      location.pathname.startsWith("/invoices") ? "active" : ""
-                    }`}
-                  >
-                    🧾 Faktury
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link
-                    to="/statistics"
-                    className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
-                      location.pathname.startsWith("/statistics") ? "active" : ""
-                    }`}
-                  >
-                    📊 Statistiky
-                  </Link>
-                </li>
-              </ul>
-          )}
             {isLoggedIn && (
-              <span className="navbar-text me-3 text-white">
-                Přihlášen: {user?.email} {user?.isAdmin ? "(admin)" : ""}
-              </span>
-            )}
-            {isLoggedIn && (
-              <button className="btn btn-outline-light btn-sm" onClick={logout}>
-                Odhlásit se
-              </button>
+              <>
+                <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-flex gap-2">
+                  <li className="nav-item">
+                    <Link
+                      to="/persons"
+                      className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                        location.pathname.startsWith("/persons") ? "active" : ""
+                      }`}
+                    >
+                      👤 Osoby
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link
+                      to="/invoices"
+                      className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                        location.pathname.startsWith("/invoices") ? "active" : ""
+                      }`}
+                    >
+                      🧾 Faktury
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link
+                      to="/statistics"
+                      className={`nav-link fw-semibold text-white px-3 py-2 rounded nav-highlight ${
+                        location.pathname.startsWith("/statistics") ? "active" : ""
+                      }`}
+                    >
+                      📊 Statistiky
+                    </Link>
+                  </li>
+                </ul>
+
+                <span className="navbar-text me-3 text-white">
+                  Přihlášen: {user?.email} {user?.isAdmin ? "(admin)" : ""}
+                </span>
+                <button className="btn btn-outline-light btn-sm" onClick={logout}>
+                  Odhlásit se
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -111,7 +108,6 @@ const AppLayout = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-
               <Route
                 path="/persons/*"
                 element={
@@ -146,8 +142,8 @@ const AppLayout = () => {
                   </PrivateRoute>
                 }
               />
-              <Route path="*" element={<Navigate to="/persons" />} />
               <Route path="/aboutApp" element={<AboutApp />} />
+              <Route path="*" element={<Navigate to="/persons" />} />
             </Routes>
           </div>
         </div>
