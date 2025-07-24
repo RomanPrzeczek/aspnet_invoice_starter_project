@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
     const navigate = useNavigate();
-
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
     const [formData, setFormData] = useState({
         password: "",
         name: "",
@@ -29,7 +29,7 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const response = await fetch("/api/user", {
+        const response = await fetch(`${apiBase}/api/user`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
