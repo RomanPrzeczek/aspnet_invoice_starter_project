@@ -18,7 +18,7 @@ const Register = () => {
         zip: "",
         city: "",
         note: "",
-        country: "CzechRepublic", // výchozí hodnota enumu (přizpůsob pokud jiná)
+        country: "CZECHIA"
     });
 
     const handleChange = (e) => {
