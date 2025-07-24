@@ -28,6 +28,7 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Import BE url v Register: ", import.meta.env.VITE_API_BASE_URL);
 
         const response = await fetch(`${apiBase}/api/user`, {
             method: "POST",
