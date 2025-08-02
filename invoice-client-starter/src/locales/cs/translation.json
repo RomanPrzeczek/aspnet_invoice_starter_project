@@ -1,0 +1,10 @@
+{   
+    "Logout":"Odhlásit",
+    "LoggedIn":"Přihlášen",
+    "Statistics":"Statistiky",
+    "Invoices":"Faktury",
+    "People":"Osoby",
+    "InvoiceApp": "FakturyApp",
+    "welcome": "Vítejte v aplikaci!",
+    "logout": "Odhlásit se"
+}

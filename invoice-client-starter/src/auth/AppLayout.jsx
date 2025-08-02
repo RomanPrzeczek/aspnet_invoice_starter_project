@@ -9,13 +9,16 @@ import InvoiceDetail from "../invoices/InvoiceDetail";
 import InvoiceForm from "../invoices/InvoiceForm";
 import StatisticsPage from "../components/statistics/StatisticsPage";
 import AboutApp from "../components/AboutApp";
+import LanguageSwitcher from "../locales/LanguageSwitcher";
 
 import Login from "./Login";
 import Register from "./Register";
 import PrivateRoute from "./PrivateRoute";
 import { useAuth } from "./AuthContext";
+import {useTranslation} from "react-i18next";
 
 const AppLayout = () => {
+  const {t} = useTranslation();
   const { user, isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,8 +38,10 @@ const AppLayout = () => {
       <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow">
         <div className="container-fluid">
           <Link to={toggleRoute} className="navbar-brand fw-bold">
-            InvoiceApp <span className="text-light ms-2">{toggleLabel}</span>
+            {t('InvoiceApp')} <span className="text-light ms-2">{toggleLabel}</span>
           </Link>
+
+          <LanguageSwitcher />
 
           <button
             className="navbar-toggler"
@@ -61,7 +66,7 @@ const AppLayout = () => {
                         location.pathname.startsWith("/persons") ? "active" : ""
                       }`}
                     >
-                      👤 Osoby
+                      👤 {t('People')}
                     </Link>
                   </li>
                   <li className="nav-item">
@@ -71,7 +76,7 @@ const AppLayout = () => {
                         location.pathname.startsWith("/invoices") ? "active" : ""
                       }`}
                     >
-                      🧾 Faktury
+                      🧾 {t('Invoices')}
                     </Link>
                   </li>
                   <li className="nav-item">
@@ -81,16 +86,16 @@ const AppLayout = () => {
                         location.pathname.startsWith("/statistics") ? "active" : ""
                       }`}
                     >
-                      📊 Statistiky
+                      📊 {t('Statistics')}
                     </Link>
                   </li>
                 </ul>
 
                 <span className="navbar-text me-3 text-white">
-                  Přihlášen: {user?.email} {user?.isAdmin ? "(admin)" : ""}
+                  {t('LoggedIn')}: {user?.email} {user?.isAdmin ? "(admin)" : ""}
                 </span>
                 <button className="btn btn-outline-light btn-sm" onClick={logout}>
-                  Odhlásit se
+                  {t('Logout')}
                 </button>
               </>
             )}
