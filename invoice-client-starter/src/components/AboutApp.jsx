@@ -1,40 +1,44 @@
+import { useTranslation } from "react-i18next";
+
 const AboutApp = () => {
+    const {t} = useTranslation();
+
     return(
         <div >
             <h1 className="mb-4">
                 <i className="bi bi-info-circle-fill me-2"></i> 
-                O aplikaci Invoices
+                {t('AboutApp')}
             </h1>
 
 
             <p className="lead mb-4">
-                Vítejte v mé aplikaci simulující správu fakturačního systému:
+                {t('Welcome')}
             </p>
 
             <ul className="list-group list-group-flush text-start mb-4">
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - registraci, login, logout uživatelů
+                    {t('Registerloginlogout')}
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - přehledy a detail uživatelů a faktur
+                    {t('OverviewDetail')}
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - úpravu a mazání uživatelů a faktur
+                    {t('UpdateOf')}
                 </li>
                 <li className="list-group-item"><i className="bi bi-check-circle-fill text-success me-2"></i>
-                - responzivní, mobile-first design
+                    {t('ResponsiveDesign')}
                 </li>
             </ul>
 
             <p className="text-muted">
                 <a href="https://www.rero.cz/dovednosti.html" target="blank">
-                    Autor: @Roman Przeczek 
+                    {t('Author')}: @Roman Przeczek 
                 </a>
             </p>
 
             <h4 className="mb-3">
                 <i className="bi bi-link-45deg me-2"></i>
-                Dokumentace app (GitHub)
+                {t('DocumentationApp')} (GitHub)
             </h4>
 
             <ul className="list-group text-start mb-4">

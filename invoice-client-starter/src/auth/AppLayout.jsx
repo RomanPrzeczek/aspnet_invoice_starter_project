@@ -24,8 +24,12 @@ const AppLayout = () => {
   const location = useLocation();
 
   const isAboutApp = location.pathname === "/aboutApp";
-  const toggleRoute = isAboutApp ? "/login" : "/aboutApp";
-  const toggleLabel = isAboutApp ? "/ Přihlášení" : "/ O aplikaci";
+  const toggleRoute = !isLoggedIn?
+    (isAboutApp ? "/login" : "/aboutApp")
+    : "/aboutApp";
+  const toggleLabel = !isLoggedIn?
+    (isAboutApp ? `/ ${t('Login')}` : `/ ${t('AboutApp')}`)
+    : `/ ${t('AboutApp')}`;
 
   useEffect(() => {
     if (!isLoggedIn && location.pathname !== "/aboutApp") {

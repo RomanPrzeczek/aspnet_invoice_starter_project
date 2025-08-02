@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Register = () => {
+    const {t} = useTranslation();
     const navigate = useNavigate();
     const apiBase = import.meta.env.VITE_API_BASE_URL;
     const [formData, setFormData] = useState({
@@ -50,7 +52,7 @@ const Register = () => {
 
     return (
         <div className="container mt-5">
-            <h2>Registrace</h2>
+            <h2> {t('Register')} </h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                     <label>Email</label>
@@ -58,33 +60,33 @@ const Register = () => {
                 </div>
 
                 <div className="mb-3">
-                    <label>Heslo</label>
+                    <label> {t('Password')} </label>
                     <input type="password" className="form-control" name="password" value={formData.password} onChange={handleChange} required />
                 </div>
 
                 <div className="mb-3">
-                    <label>Jméno / Firma</label>
+                    <label> {t('NameCompany')} </label>
                     <input className="form-control" name="name" value={formData.name} onChange={handleChange} />
                 </div>
 
                 <div className="row">
                     <div className="col-md-6 mb-3">
-                        <label>IČO</label>
+                        <label> {t('CIN')} </label>
                         <input className="form-control" name="identificationNumber" value={formData.identificationNumber} onChange={handleChange} />
                     </div>
                     <div className="col-md-6 mb-3">
-                        <label>DIČ</label>
+                        <label> {t('VATIN')} DIČ</label>
                         <input className="form-control" name="taxNumber" value={formData.taxNumber} onChange={handleChange} />
                     </div>
                 </div>
 
                 <div className="row">
                     <div className="col-md-6 mb-3">
-                        <label>Číslo účtu</label>
+                        <label> {t('BankAccountNr')} </label>
                         <input className="form-control" name="accountNumber" value={formData.accountNumber} onChange={handleChange} />
                     </div>
                     <div className="col-md-6 mb-3">
-                        <label>Kód banky</label>
+                        <label> {t('BankCode')} </label>
                         <input className="form-control" name="bankCode" value={formData.bankCode} onChange={handleChange} />
                     </div>
                 </div>
@@ -95,41 +97,41 @@ const Register = () => {
                 </div>
 
                 <div className="mb-3">
-                    <label>Telefon</label>
+                    <label> {t('Phone')} </label>
                     <input className="form-control" name="telephone" value={formData.telephone} onChange={handleChange} />
                 </div>
 
                 <div className="row">
                     <div className="col-md-8 mb-3">
-                        <label>Ulice</label>
+                        <label> {t('Street')} </label>
                         <input className="form-control" name="street" value={formData.street} onChange={handleChange} />
                     </div>
                     <div className="col-md-4 mb-3">
-                        <label>PSČ</label>
+                        <label> {t('ZIP')} </label>
                         <input className="form-control" name="zip" value={formData.zip} onChange={handleChange} />
                     </div>
                 </div>
 
                 <div className="mb-3">
-                    <label>Město</label>
+                    <label> {t('City')}</label>
                     <input className="form-control" name="city" value={formData.city} onChange={handleChange} />
                 </div>
 
                 <div className="mb-3">
-                    <label>Země (Country enum)</label>
+                    <label> {t('Country')} (Country enum)</label>
                     <select className="form-select" name="country" value={formData.country} onChange={handleChange}>
-                        <option value="CZECHIA">Česká republika</option>
-                        <option value="SLOVAKIA">Slovensko</option>
+                        <option value="CZECHIA"> {t('CZECHIA')} </option>
+                        <option value="SLOVAKIA"> {t('SLOVAKIA')} </option>
                     </select>
                 </div>
 
                 <div className="mb-3">
-                    <label>Poznámka</label>
+                    <label> {t('Note')} </label>
                     <textarea className="form-control" name="note" value={formData.note} onChange={handleChange} />
                 </div>
 
                 <button type="submit" className="btn btn-success">
-                    Registrovat se
+                    {t('Register')}
                 </button>
             </form>
         </div>

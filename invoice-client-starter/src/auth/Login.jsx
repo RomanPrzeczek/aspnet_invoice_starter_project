@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import {useTranslation} from "react-i18next";
 
 const Login = () => {
+    const {t} = useTranslation();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const { login } = useAuth();
@@ -36,7 +38,7 @@ const Login = () => {
 
     return (
         <div className="container mt-5">
-            <h2>Přihlášení</h2>
+            <h2> {t('Login')} </h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                     <label>Email</label>
@@ -49,7 +51,7 @@ const Login = () => {
                     />
                 </div>
                 <div className="mb-3">
-                    <label>Heslo</label>
+                    <label> {t('Password')} </label>
                     <input
                         type="password"
                         className="form-control"
@@ -59,13 +61,13 @@ const Login = () => {
                     />
                 </div>
                 <button type="submit" className="btn btn-primary">
-                    Přihlásit se
+                    {t('Login')}
                 </button>
             </form>
             <p className="mt-3">
-                Ještě nemáte účet?{" "}
+                {t('NoAccountYet')} {" "}
                 <Link to="/register" className="btn btn-link p-0 align-baseline">
-                    Zaregistrujte se zde
+                    {t('RegisterHere')}
                 </Link>
             </p>
         </div>
