@@ -1,5 +1,6 @@
 ﻿import {useEffect, useState} from "react";
 import {useNavigate, useParams, Link} from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import {apiGet, apiPost, apiPut} from "../utils/api";
 
@@ -8,6 +9,7 @@ import InputSelect from "../components/InputSelect";
 import FlashMessage from "../components/FlashMessage";
 
 const InvoiceForm = () => {
+    const {t} = useTranslation();
     const navigate = useNavigate();
     const {id} = useParams();
     
@@ -49,7 +51,7 @@ const InvoiceForm = () => {
         e.preventDefault();
     
         if (!invoice.seller || !invoice.buyer) {
-            setError("Prosím vyberte dodavatele i odběratele.");
+            setError(`${t('ChooseSellerBuyer')}`);
             setSent(true);
             setSuccess(false);
             return;
@@ -57,17 +59,12 @@ const InvoiceForm = () => {
     
         const invoiceToSend = {
             ...invoice,
-            // seller: { _id: Number(invoice.seller) }, // back to object
-            // buyer: { _id: Number(invoice.buyer) }
             seller: { _id: invoice.seller },
             buyer: { _id: invoice.buyer }
         };
-        
-    
-        console.log("Odesílaná faktura:", invoiceToSend); // debug 
-    
+           
         (id ? apiPut("/api/invoices/" + id, invoiceToSend) : apiPost("/api/invoices", invoiceToSend))
-            .then((data) => {
+            .then(() => {
                 setSent(true);
                 setSuccess(true);
                 navigate("/invoices");
@@ -85,7 +82,7 @@ const InvoiceForm = () => {
 
     return (
         <div>
-            <h1>{id ? "Upravit" : "Vytvořit"} fakturu</h1>
+            <h1>{id ? `${t('UpdateInvoice')}` : `${t('CreateInvoice')}`}</h1>
             <hr/>
             {errorState ? (
                 <div className="alert alert-danger">{errorState}</div>
@@ -93,7 +90,7 @@ const InvoiceForm = () => {
             {sent && (
                 <FlashMessage
                     theme={success ? "success" : ""}
-                    text={success ? "Uložení faktury proběhlo úspěšně." : ""}
+                    text={success ? `${t('InvoiceSuccessfullySaved')}` : ""}
                 />
             )}
             <form onSubmit={handleSubmit}>
@@ -102,8 +99,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="invoiceNumber"
                     min="3"
-                    label="Číšlo faktury"
-                    prompt="Zadejte číslo faktury"
+                    label={t('InvoiceNumber')}
+                    prompt={t('InsertInvoiceNumber')}
                     value={invoice.invoiceNumber}
                     handleChange={(e) => {
                         setInvoice({...invoice, invoiceNumber: e.target.value});
@@ -115,8 +112,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="issued"
                     min="3"
-                    label="Vystaveno"
-                    prompt="Zadejte datum vystavení formátu YYYY-MM-DD"
+                    label={t('Issued')}
+                    prompt={t('InsertIssuedDate')}
                     value={invoice.issued}
                     handleChange={(e) => {
                         setInvoice({...invoice, issued: e.target.value});
@@ -128,8 +125,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="dueDate"
                     min="3"
-                    label="Splatnost"
-                    prompt="Zadejte datum splatnosti formátu YYYY-MM-DD"
+                    label={t('Duedate')}
+                    prompt={t('InsertDueDate')}
                     value={invoice.dueDate}
                     handleChange={(e) => {
                         setInvoice({...invoice, dueDate: e.target.value});
@@ -141,8 +138,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="product"
                     min="2"
-                    label="Předmět prodeje"
-                    prompt="Uveďte předmět prodeje"
+                    label={t('ProductScope')}
+                    prompt={t('InsertProductScope')}
                     value={invoice.product}
                     handleChange={(e) => {
                         setInvoice({...invoice, product: e.target.value});
@@ -154,8 +151,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="price"
                     min="1"
-                    label="Cena v Kč"
-                    prompt="Uveďte cenu v Kč."
+                    label={t('PriceDescription')}
+                    prompt={t('InsertPriceDescription')}
                     value={invoice.price}
                     handleChange={(e) => {
                         setInvoice({...invoice, price: e.target.value});
@@ -167,8 +164,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="vat"
                     min="2"
-                    label="DPH"
-                    prompt="Uveďte sazbu DPH, 21% ?."
+                    label={t('VAT')}
+                    prompt={t('InsertVAT')}
                     value={invoice.vat}
                     handleChange={(e) => {
                         setInvoice({...invoice, vat: e.target.value});
@@ -180,8 +177,8 @@ const InvoiceForm = () => {
                     type="text"
                     name="note"
                     min="3"
-                    label="Poznámka"
-                    prompt="Uveďte poznámku."
+                    label={t('Note')}
+                    prompt={t('InsertNote')}
                     value={invoice.note}
                     handleChange={(e) => {
                         setInvoice({...invoice, note: e.target.value});
@@ -193,17 +190,10 @@ const InvoiceForm = () => {
                     type="select"
                     multiple={false}
                     name="seller"
-                    label="Dodavatel"
-                    prompt="Vyberte osobu"
-                    //value={id ? invoice.seller?._id : invoice.seller || ""}
+                    label={t('Seller')}
+                    prompt={t('InsertSeller')}
                     value={invoice.seller}
                     items={personsListState}
-                    // handleChange={(e) => {
-                    //     setInvoice({
-                    //         ...invoice,
-                    //         seller: e.target.value ? { _id: Number(e.target.value) } : ""
-                    //     });
-                    // }}
                     handleChange={(e) => {
                         setInvoice({ ...invoice, seller: Number(e.target.value) });
                     }}
@@ -214,26 +204,19 @@ const InvoiceForm = () => {
                     type="select"
                     multiple={false}
                     name="buyer"
-                    label="Odběratel"
-                    prompt="Vyberte osobu"
-                    //value={id ? invoice.buyer?._id : invoice.buyer || ""}
+                    label={t('Buyer')}
+                    prompt={t('InsertBuyer')}
                     value={invoice.buyer}
                     items={personsListState}
-                    // handleChange={(e) => {
-                    //     setInvoice({
-                    //         ...invoice,
-                    //         buyer: e.target.value ? { _id: Number(e.target.value) } : ""
-                    //     });
-                    // }}
                     handleChange={(e) => {
                         setInvoice({ ...invoice, buyer: Number(e.target.value) });
                     }}
                 />
                 <div className="d-flex justify-content-between mt-4">
                     <Link to={"/invoices"} className="btn btn-secondary mt-2">
-                        Zpět na přehled faktur
+                        {t('BackToInvoices')}
                     </Link>
-                    <input type="submit" className="btn btn-primary" value="Uložit"/>
+                    <input type="submit" className="btn btn-primary" value={t('Save')}/>
                 </div>
             </form>
         </div>

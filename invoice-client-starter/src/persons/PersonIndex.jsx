@@ -1,12 +1,12 @@
 import {useEffect, useState} from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../auth/AuthContext";
-
 import {apiDelete, apiGet} from "../utils/api";
-
 import PersonTable from "./PersonTable";
 
 const PersonIndex = () => {
+    const {t} = useTranslation();
     const {token} = useAuth();
     const [persons, setPersons] = useState([]);
 
@@ -26,11 +26,11 @@ const PersonIndex = () => {
 
     return (
         <div>
-            <h1>Seznam osob</h1>
+            <h1> {t('PeoplesList')} </h1>
             <PersonTable
                 deletePerson={deletePerson}
                 items={persons}
-                label="Počet osob:"
+                label={t('PeoplesCount')+": "} 
             />
         </div>
     );

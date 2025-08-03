@@ -1,10 +1,12 @@
 ﻿import {useEffect, useState} from "react";
 import {apiDelete, apiGet} from "../utils/api";
+import { useTranslation } from "react-i18next";
 
 import InvoiceTable from "./InvoiceTable";
 import InvoiceFilterBar from "../components/InvoiceFilterBar";
 
 const InvoiceIndex = () => {
+    const {t} = useTranslation();
     const [invoices, setInvoices] = useState([]);
     const [filters, setFilters] = useState({
         buyerId: '',
@@ -77,11 +79,11 @@ const InvoiceIndex = () => {
                 filterActive={filterActive}
             />
 
-            <h1>Seznam faktur</h1>
+            <h1> {t('InvoicesList')} </h1>
             <InvoiceTable
                 deleteInvoice={deleteInvoice}
                 items={invoices}
-                label="Počet faktur:"
+                label={t('InvoicesCount')+": "}
             />
         </div>
     )

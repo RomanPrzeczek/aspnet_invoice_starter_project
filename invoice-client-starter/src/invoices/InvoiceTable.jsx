@@ -1,8 +1,10 @@
 ﻿import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 
 const InvoiceTable = ({ label, items, deleteInvoice }) => {
+    const {t} = useTranslation();
     const { isAdmin, user } = useAuth();
 
     return (
@@ -15,11 +17,11 @@ const InvoiceTable = ({ label, items, deleteInvoice }) => {
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Dodavatel</th>
-                        <th>Odběratel</th>
-                        <th>Produkt</th>
-                        <th>Částka</th>
-                        <th colSpan={3}>Akce</th>
+                        <th>{t('Seller')}</th>
+                        <th>{t('Buyer')}</th>
+                        <th>{t('Product')}</th>
+                        <th>{t('Price')}</th>
+                        <th colSpan={3}>{t('Action')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,7 +43,7 @@ const InvoiceTable = ({ label, items, deleteInvoice }) => {
                                                 to={`/invoices/show/${item._id}`}
                                                 className="btn btn-sm btn-info"
                                             >
-                                                Zobrazit
+                                                {t('Show')}
                                             </Link>
                                         )}
 
@@ -50,7 +52,7 @@ const InvoiceTable = ({ label, items, deleteInvoice }) => {
                                                 to={`/invoices/edit/${item._id}`}
                                                 className="btn btn-sm btn-warning"
                                             >
-                                                Upravit
+                                                {t('Update')}
                                             </Link>
                                         )}
 
@@ -59,7 +61,7 @@ const InvoiceTable = ({ label, items, deleteInvoice }) => {
                                                 onClick={() => deleteInvoice(item._id)}
                                                 className="btn btn-sm btn-danger"
                                             >
-                                                Odstranit
+                                                {t('Delete')}
                                             </button>
                                         )}
                                     </div>
@@ -72,7 +74,7 @@ const InvoiceTable = ({ label, items, deleteInvoice }) => {
 
             {/* Přidání nové faktury: povoleno všem přihlášeným */}
             <Link to={"/invoices/create"} className="btn btn-success mt-2">
-                Nová faktura
+                {t('NewInvoice')}
             </Link>
         </div>
     );

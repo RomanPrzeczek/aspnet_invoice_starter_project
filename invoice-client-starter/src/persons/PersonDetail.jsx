@@ -1,10 +1,11 @@
 import {useEffect, useState} from "react";
 import { useParams, Link } from "react-router-dom";
-import { apiGet } from "../utils/api"; // uprav podle umístění souboru
-
+import { apiGet } from "../utils/api"; 
+import { useTranslation } from "react-i18next";
 import Country from "./Country";
 
 const PersonDetail = () => {
+    const {t} = useTranslation();
     const {id} = useParams();
     const [person, setPerson] = useState({});
     const [sellerInvoice, setSellerInvoice] = useState([]);
@@ -43,16 +44,16 @@ const PersonDetail = () => {
     return (
         <>
             <div>
-                <h1>Detail osoby</h1>
+                <h1> {t('PersonDetail')} </h1>
                 <hr/>
                 <h3>{person.name} ({person.identificationNumber})</h3>
                 <p>
-                    <strong>DIČ:</strong>
+                    <strong>{t('VATIN')} :</strong>
                     <br/>
                     {person.taxNumber}
                 </p>
                 <p>
-                    <strong>Bankovní účet:</strong>
+                    <strong>{t('BankAccountNr')} :</strong>
                     <br/>
                     {person.accountNumber}/{person.bankCode} ({person.iban})
                 </p>
@@ -62,18 +63,18 @@ const PersonDetail = () => {
                     {person.telephone}
                 </p>
                 <p>
-                    <strong>Mail:</strong>
+                    <strong>Email:</strong>
                     <br/>
                     {person.mail}
                 </p>
                 <p>
-                    <strong>Sídlo:</strong>
+                    <strong>{t('Residence')} :</strong>
                     <br/>
                     {person.street}, {person.city},
                     {person.zip}, {country}
                 </p>
                 <p>
-                    <strong>Poznámka:</strong>
+                    <strong>{t('Note')} :</strong>
                     <br/>
                     {person.note}
                 </p>
@@ -81,16 +82,16 @@ const PersonDetail = () => {
 
             <div>
                 <p>
-                    Počet vystavených faktur: {sellerInvoice.length}
+                    {t('SellersInvoiceCount')}: {sellerInvoice.length}
                 </p>
 
                 <table className="table table-bordered">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Dodavatel</th>
-                            <th>Odběratel</th>
-                            <th>Částka</th>
+                            <th>{t('Seller')}</th>
+                            <th>{t('Buyer')}</th>
+                            <th>{t('Price')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,16 +109,16 @@ const PersonDetail = () => {
 
             <div>
                 <p>
-                    Počet přijatých faktur: {buyerInvoice.length}
+                    {t('BuyersInvoiceCount')}: {buyerInvoice.length}
                 </p>
 
                 <table className="table table-bordered">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Dodavatel</th>
-                            <th>Odběratel</th>
-                            <th>Částka</th>
+                            <th>{t('Seller')}</th>
+                            <th>{t('Buyer')}</th>
+                            <th>{t('Price')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -133,7 +134,7 @@ const PersonDetail = () => {
                 </table>
             </div>
             <Link to={"/persons"} className="btn btn-secondary mt-2">
-                Zpět na přehled osob
+                {t('BackToPeople')}
             </Link>
         </>
     );

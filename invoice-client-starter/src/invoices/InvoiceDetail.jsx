@@ -1,8 +1,10 @@
 ﻿import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { apiGet } from "../utils/api"; // uprav podle umístění souboru
+import { apiGet } from "../utils/api"; 
+import { useTranslation } from "react-i18next";
 
 const InvoiceDetail = () => {
+    const {t} = useTranslation();
     const { id } = useParams();
     const [invoice, setInvoice] = useState({});
 
@@ -19,46 +21,46 @@ const InvoiceDetail = () => {
     return (
         <>
             <div>
-                <h1>Detail faktury</h1>
+                <h1> {t('InvoiceDetail')} </h1>
                 <hr />
                 <h3>#{invoice.invoiceNumber} ({invoice.product})</h3>
                 <p>
-                    <strong>Dodavatel:</strong>
+                    <strong>{t('Seller')}: </strong>
                     <br />
                     {invoice.seller?.name}
                 </p>
                 <p>
-                   <strong>Odběratel:</strong>
+                   <strong>{t('Buyer')}: </strong>
                     <br />
                    {invoice.buyer?.name}
                 </p>
                 <p>
-                    <strong>Vystaveno:</strong>
+                    <strong>{t('Issued')}: </strong>
                     <br />
                     {invoice.issued}
                 </p>
                 <p>
-                    <strong>Datum splatnosti:</strong>
+                    <strong>{t('DueDate')} :</strong>
                     <br />
                     {invoice.dueDate}
                 </p>
                 <p>
-                    <strong>Částka:</strong>
+                    <strong>{t('Price')} :</strong>
                     <br />
                     {invoice.price}
                 </p>
                 <p>
-                    <strong>DPH:</strong>
+                    <strong>{t('VAT')} :</strong>
                     <br />
                     {invoice.vat}
                 </p>
                 <p>
-                    <strong>Poznámka:</strong>
+                    <strong>{t('Note')} :</strong>
                     <br />
                     {invoice.note}
                 </p>
                 <Link to={"/invoices"} className="btn btn-secondary mt-2">
-                    Zpět na přehled faktur
+                    {t('BackToInvoices')}
                 </Link>
             </div>
         </>

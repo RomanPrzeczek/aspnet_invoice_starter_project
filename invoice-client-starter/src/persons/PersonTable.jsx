@@ -3,8 +3,10 @@
 import {Link} from "react-router-dom";
 import PropTypes from "prop-types";
 import { useAuth } from "../auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const PersonTable = ({label, items, deletePerson}) => {
+    const {t} = useTranslation();
     const {isAdmin, user} = useAuth();
     return (
         <div>
@@ -16,8 +18,8 @@ const PersonTable = ({label, items, deletePerson}) => {
                 <thead>
                 <tr>
                     <th>#</th>
-                    <th>Jméno</th>
-                    <th colSpan={3}>Akce</th>
+                    <th>{t('NamePerson')}</th>
+                    <th colSpan={3}>{t('Action')}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -33,13 +35,13 @@ const PersonTable = ({label, items, deletePerson}) => {
                                     to={"/persons/show/" + item._id}
                                     className="btn btn-sm btn-info"
                                 >
-                                    Zobrazit
+                                    {t('Show')}
                                 </Link>
                                 <Link
                                     to={"/persons/edit/" + item._id}
                                     className="btn btn-sm btn-warning"
                                 >
-                                    Upravit
+                                    {t('Update')}
                                 </Link>
                                 </>
                                 )}
@@ -48,7 +50,7 @@ const PersonTable = ({label, items, deletePerson}) => {
                                     onClick={() => deletePerson(item._id)}
                                     className="btn btn-sm btn-danger"
                                 >
-                                    Odstranit
+                                    {t('Delete')}
                                 </button>
                                 )}
                             </div>
@@ -59,7 +61,7 @@ const PersonTable = ({label, items, deletePerson}) => {
             </table>
             {isAdmin && (
             <Link to={"/persons/create"} className="btn btn-success">
-                Nová osoba
+                {t('NewPerson')}
             </Link>
             )}
         </div>

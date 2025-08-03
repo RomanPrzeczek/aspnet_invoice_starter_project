@@ -1,7 +1,9 @@
 // components/invoices/InvoiceFilterBar.jsx
 import PropTypes from 'prop-types';
+import {useTranslation} from "react-i18next";
 
 const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive, onClear }) => {
+    const {t} = useTranslation();
     const handleChange = (e) => {
         setFilters((prev) => ({
             ...prev,
@@ -18,14 +20,14 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
         <form onSubmit={handleSubmit} className="p-3 bg-light border rounded mb-4">
             <div className="row g-2 align-items-end">
                 <div className="col">
-                    <label className="form-label">Dodavatel</label>
+                    <label className="form-label">{t('Seller')}</label>
                     <select
                         name="sellerId"
                         className="form-select"
                         value={filters.sellerId}
                         onChange={handleChange}
                     >
-                        <option value="">Všichni</option>
+                        <option value="">{t('AllTogether')}</option>
                         {persons.map(p => (
                             <option key={p._id} value={p._id}>{p.name}</option>
                         ))}
@@ -33,14 +35,14 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
                 </div>
 
                 <div className="col">
-                    <label className="form-label">Odběratel</label>
+                    <label className="form-label">{t('Buyer')}</label>
                     <select
                         name="buyerId"
                         className="form-select"
                         value={filters.buyerId}
                         onChange={handleChange}
                     >
-                        <option value="">Všichni</option>
+                        <option value="">{t('AllTogether')}</option>
                         {persons.map(p => (
                             <option key={p._id} value={p._id}>{p.name}</option>
                         ))}
@@ -48,7 +50,7 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
                 </div>
 
                 <div className="col">
-                    <label className="form-label">Produkt</label>
+                    <label className="form-label">{t('Product')}</label>
                     <input
                         name="product"
                         className="form-control"
@@ -58,7 +60,7 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
                 </div>
 
                 <div className="col">
-                    <label className="form-label">Min. cena</label>
+                    <label className="form-label">{t('MinPrice')}</label>
                     <input
                         name="minPrice"
                         type="number"
@@ -69,7 +71,7 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
                 </div>
 
                 <div className="col">
-                    <label className="form-label">Max. cena</label>
+                    <label className="form-label">{t('MaxPrice')}</label>
                     <input
                         name="maxPrice"
                         type="number"
@@ -92,11 +94,11 @@ const InvoiceFilterBar = ({ filters, setFilters, persons, onApply, filterActive,
 
                 <div className="col-auto d-flex gap-2">
                     <button type="submit" className="btn btn-primary">
-                        {filterActive ? "Filtrováno 🔍" : "Filtrovat"}
+                        {filterActive ? t('Filtered')+" 🔍" : t('Filter')}
                     </button>
                     {filterActive && (
                         <button type="button" className="btn btn-outline-secondary" onClick={onClear}>
-                            Zrušit filtr
+                            {t('RemoveFilter')} 
                         </button>
                     )}
                 </div>

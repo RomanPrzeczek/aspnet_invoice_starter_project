@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import {useTranslation} from "react-i18next";
 import { apiGet } from "../../utils/api";
 import {
     BarChart,
@@ -11,6 +12,7 @@ import {
 } from "recharts";
 
 const StatisticsPage = () => {
+    const {t}= useTranslation();
     const [invoiceStats, setInvoiceStats] = useState(null);
     const [personStats, setPersonStats] = useState([]);
 
@@ -27,24 +29,24 @@ const StatisticsPage = () => {
 
     return (
         <div className="container">
-            <h2>📊 Statistika</h2>
+            <h2>📊 {t('Statistics')}</h2>
 
             {invoiceStats && (
                 <div className="mb-4">
-                    <h4>Souhrn faktur</h4>
+                    <h4>{t('InvoicesSummary')}</h4>
                     <ul>
-                        <li>Součet za aktuální rok: {invoiceStats.currentYearSum} Kč</li>
-                        <li>Celkový součet: {invoiceStats.allTimeSum} Kč</li>
-                        <li>Počet faktur: {invoiceStats.invoicesCount}</li>
+                        <li>{t('CurrentYearSum')}: {invoiceStats.currentYearSum} CZK</li>
+                        <li>{t('AllTimeSum')}: {invoiceStats.allTimeSum} CZK</li>
+                        <li>{t('InvoicesCount')}: {invoiceStats.invoicesCount}</li>
                     </ul>
                 </div>
             )}
 
             {personStats.length > 0 && (
                 <div>
-                    <h4>Výnosy podle osob</h4>
+                    <h4>{t('PeopleRevenue')}</h4>
                     <>
-                        <h4 className="mt-4">📊 Výnosy podle osob</h4>
+                        <h4 className="mt-4">📊 {t('PeopleRevenue')}</h4>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart
                                 layout="vertical"

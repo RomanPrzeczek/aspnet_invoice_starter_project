@@ -110,9 +110,6 @@ const AppLayout = () => {
       {/* OBSAH */}
       <div className="container mt-4 mb-5">
         <div className="card border-0 shadow rounded-4">
-          <div className="card-header bg-primary text-white fw-semibold fs-5 rounded-top-4">
-            Obsah sekce
-          </div>
           <div className="card-body">
             <Routes>
               <Route path="/login" element={<Login />} />
