@@ -14,8 +14,6 @@ export const AuthProvider = ({ children }) => {
 
         // 🍪 Cookies alternativa (zakomentováno)
         // setToken("cookieSession");
-
-        fetchUser(token);
     };
 
     const logout = () => {
