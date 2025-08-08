@@ -7,6 +7,7 @@ import eyeShow  from '../assets/eye-password-show-svgrepo-com.svg'
 import eyeHide  from '../assets/eye-password-hide-svgrepo-com.svg'
 
 const Login = () => {
+    const [countdown, setCountdown] = useState(10);
     const [showPassword,setShowPassword] = useState(false);
     const [isLoading,setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -20,8 +21,19 @@ const Login = () => {
     const handleSubmit = async (e) => {
         //console.log("Z buildu API URL je:", import.meta.env.VITE_API_BASE_URL);
         e.preventDefault();
+        setCountdown(10);
         setIsLoading(true);
-        console.log("isLoading(handleS): "+isLoading);
+
+        const interval = setInterval(() => {
+        setCountdown((prev) => {
+            if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+            }
+            return prev - 1;
+        });
+        }, 1000);
+
         const response = await fetch(`${apiBase}/api/auth`, {
             method: "POST",
             headers: {
@@ -42,6 +54,7 @@ const Login = () => {
             } else {
                 setErrorMessage(t('LoginError'));
                 setIsLoading(false);
+                setCountdown(0);
             }
 
     };
@@ -51,7 +64,7 @@ const Login = () => {
             <h2> {t('Login')} </h2>
             {isLoading && (
             <div className="alert alert-info" role="alert">
-                {t('LoginInProgress')}
+                {t('LoginInProgress')} ({countdown} {t('SecondsLeft')})
             </div>
             )}
 
