@@ -89,3 +89,24 @@ button:focus-visible {
   background-color: rgba(255, 255, 255, 0.3);
   box-shadow: inset 0 0 0 2px white;
 }
+
+/* ---------------------------------------------------
+   6. Ikonka oka pro skrytí/zobrazení hesla
+--------------------------------------------------- */
+.password-toggle-icon {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  pointer-events: all;
+  vertical-align: auto;
+}
+
+.password-toggle-icon:hover {
+  opacity: 0.8;
+}
