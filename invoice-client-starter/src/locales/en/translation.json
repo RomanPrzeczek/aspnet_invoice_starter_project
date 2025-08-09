@@ -56,7 +56,7 @@
     "Login":"Login",
     "LoginError":"Error by login",
     "LoginFailed":"Login failed",
-    "LoginInProgress":"🔄 Login in progress… kindly wait 10sec",
+    "LoginInProgress":"🔄 Login in progress… kindly wait (sec): ",
     "Logout":"Logout",
     "LoggedIn":"Logged in",
     "MaxPrice":"Max. price",

@@ -56,7 +56,7 @@
     "Login":"Přihlásit se",
     "LoginError":"Chyba při přihlašování",
     "LoginFailed":"Přihlášení selhalo",
-    "LoginInProgress":"🔄 Přihlašuji… Prosím čekejte 10sek",
+    "LoginInProgress":"🔄 Přihlašuji… Prosím čekejte (sek): ",
     "Logout":"Odhlásit",
     "LoggedIn":"Přihlášen",
     "MaxPrice":"Max. cena",
