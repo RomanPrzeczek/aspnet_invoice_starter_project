@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'invoice-server-starter/Invoices.Api/**'
+      - 'invoice-server-starter/Invoices.Data/**'
+      - 'invoice-server-starter/global.json'
+      - 'invoice-server-starter/Directory.Build.props'
+      - '.github/workflows/main_invoice-api-romi.yml'
   workflow_dispatch:
 
 jobs:
@@ -20,17 +26,23 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Build with dotnet
-        run: dotnet build invoice-server-starter/Invoices.Api/Invoices.Api.csproj --configuration Release
+      - name: Restore
+        working-directory: ./invoice-server-starter/Invoices.Api
+        run: dotnet restore Invoices.Api.csproj
 
-      - name: dotnet publish
-        run: dotnet publish invoice-server-starter/Invoices.Api/Invoices.Api.csproj -c Release -o ./publish_output
+      - name: Build with dotnet
+        working-directory: ./invoice-server-starter/Invoices.Api
+        run: dotnet build Invoices.Api.csproj --configuration Release --no-restore
+
+      - name: Publish API (Release)
+        working-directory: ./invoice-server-starter/Invoices.Api
+        run: dotnet publish Invoices.Api.csproj -c Release -o ./out --no-build
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./publish_output
+          path: ./invoice-server-starter/Invoices.Api/out
 
   deploy:
     runs-on: windows-latest
@@ -44,7 +56,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-          path: ./publish_output
+          path: ./out
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -58,4 +70,4 @@ jobs:
         with:
           app-name: 'invoice-api-romi'
           slot-name: 'Production'
-          package: ./publish_output
+          package: ./out
