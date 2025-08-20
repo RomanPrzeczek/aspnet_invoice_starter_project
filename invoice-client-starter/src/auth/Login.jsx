@@ -21,7 +21,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         //console.log("Z buildu API URL je:", import.meta.env.VITE_API_BASE_URL);
         e.preventDefault();
-        setCountdown(15);
+        setCountdown(20);
         setIsLoading(true);
 
         const interval = setInterval(() => {
