@@ -55,7 +55,7 @@ namespace Invoices.Api.Controllers
         /// Authenticates a user and returns a UserDTO if successful.
         /// Endpoint: api/user
         /// </summary>
-        /// <param name="authDto"></param>
+        /// <param name="registerDto"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         [HttpPost("user")]
@@ -110,27 +110,6 @@ namespace Invoices.Api.Controllers
         /// <param name="authDto"></param>
         /// <returns></returns>
         [HttpPost("auth")]
-        /// Cookies variant of the endpoint.
-        /*        public async Task<IActionResult> LogInUser(AuthDto authDto)
-                {
-                    IdentityUser? user = await _userManager.FindByEmailAsync(authDto.Email); // find user by email
-
-                    if (user is null)
-                        return NotFound();
-
-                    Microsoft.AspNetCore.Identity.SignInResult result =
-                        await _signInManager.PasswordSignInAsync(user, authDto.Password, true, false); // attempt to sign in the user with the provided password
-
-                    if (result.Succeeded)
-                    {
-                        UserDto userDto = await ConvertToUserDTO(user); // convert IdentityUser to UserDTO
-                        return Ok(userDto); // return the UserDTO
-                    }
-
-                    return BadRequest(); // if sign-in failed, return a bad request
-                }*/
-
-        ///JWT authentication endpoint for user login.
         public async Task<IActionResult> Login([FromBody] AuthDto authDto)
         {
             Console.WriteLine("👉 Login endpoint triggered.");

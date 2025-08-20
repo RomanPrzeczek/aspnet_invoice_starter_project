@@ -11,11 +11,8 @@ namespace Invoices.Data.Repositories
 {
     public class InvoiceRepository : BaseRepository<Invoice>, IInvoiceRepository
     {
-        private readonly InvoicesDbContext invoicesDbContext;
         public InvoiceRepository(InvoicesDbContext invoicesDbContext) : base(invoicesDbContext)
-        {
-            this.invoicesDbContext = invoicesDbContext ?? throw new ArgumentNullException(nameof(invoicesDbContext));
-        }
+        { }
 
         /// <summary>
         /// Overload of BaseRepository method for use in InvoiceController AddInvoice(),
@@ -25,7 +22,7 @@ namespace Invoices.Data.Repositories
         /// <returns></returns>
         public new Invoice? FindById(ulong id)
         {
-            return invoicesDbContext.Invoices
+            return invoicesDbContext.Invoices!
                 .Include(i => i.Seller)
                 .Include(i => i.Buyer)
                 .FirstOrDefault(i => i.InvoiceId == id);
@@ -33,7 +30,7 @@ namespace Invoices.Data.Repositories
 
         public IQueryable<Invoice> GetQueryable()
         {
-            return invoicesDbContext.Invoices;
+            return invoicesDbContext.Invoices!;
         }
     }
 }

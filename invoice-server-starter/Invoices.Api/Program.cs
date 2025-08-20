@@ -18,7 +18,7 @@ var logger = LoggerFactory
     .Create(builder => builder.AddConsole())
     .CreateLogger("Startup");
 
-logger.LogInformation("🚀 Spouštím aplikaci...");
+logger.LogInformation("🚀 Starting app...");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,15 +68,15 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 
-foreach (var kv in builder.Configuration.AsEnumerable())
-{
-    logger.LogInformation($"{kv.Key} = {kv.Value}");
-}
+//foreach (var kv in builder.Configuration.AsEnumerable())
+//{
+//    logger.LogInformation($"{kv.Key} = {kv.Value}");
+//}
 
 if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer))
 {
-    logger.LogInformation("❌ JWT konfigurace chybí. Jwt:Key nebo Jwt:Issuer nejsou definovány.");
-    throw new InvalidOperationException("JWT konfigurace chybí.");
+    logger.LogInformation("❌ JWT cinfig missing. Jwt:Key or Jwt:Issuer not defined.");
+    throw new InvalidOperationException("JWT config missing.");
 }
 
 // Add Authentication (před AddIdentity, nebo hned za tím)
@@ -144,10 +144,25 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<InvoicesDbContext>();
-    logger.LogInformation("✅ Databáze načtena: " + dbContext.Database.GetConnectionString());
-    var canConnect = await dbContext.Database.CanConnectAsync();
-    logger.LogInformation($"🧪 Can connect to DB: {canConnect}");
+
+    if (dbContext.Database.IsRelational())
+    {
+        // Relational DB (SQL Server/Postgres…)
+        logger.LogInformation("✅ DB loaded ");
+        var canConnect = await dbContext.Database.CanConnectAsync();
+        logger.LogInformation($"🧪 Can connect to DB: {canConnect}");
+
+        // (volitelně) migrace jen pro relační provider
+        // await dbContext.Database.MigrateAsync();
+    }
+    else
+    {
+        // InMemory / test – nic relačního zde nevolat
+        logger.LogInformation("ℹ️ Non-relational provider (InMemory) – skipping connection checks.");
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 }
+
 
 app.Use(async (context, next) =>
 {
@@ -157,7 +172,7 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        logger.LogInformation($"❌ Výjimka za běhu: {ex.Message}");
+        logger.LogInformation($"❌ Runtime exception: {ex.Message}");
         logger.LogInformation(ex.StackTrace);
         throw;
     }
@@ -182,17 +197,12 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/", () => "Server runs.");
 
-/// <summary>
-/// Calls the helper CreateAllRoles below to create all roles defined in UserRoles class.
-/// </summary>
 using (var scope = app.Services.CreateScope())
 {
     RoleManager<IdentityRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    // await CreateAllRoles(roleManager);
 }
 
-logger.LogInformation("✅ Aplikace se spouští...");
+logger.LogInformation("✅ App is starting...");
 
 try
 {
@@ -200,31 +210,9 @@ try
 }
 catch (Exception ex)
 {
-    logger.LogInformation($"❌ CHYBA při startu aplikace: {ex.Message}");
+    logger.LogInformation($"❌ Error by app start: {ex.Message}");
     logger.LogInformation(ex.StackTrace);
     throw; // důležité pro Azure, aby vrátil 500
 }
 
-/// <summary>
-/// Helper method to create all roles defined in UserRoles class.
-/// </summary>
-async Task CreateAllRoles(RoleManager<IdentityRole> roleManager)
-{
-    FieldInfo[] constants = typeof(UserRoles)
-        .GetFields(BindingFlags.Public | BindingFlags.Static)
-        .Where(fieldInfo => fieldInfo.IsLiteral
-            && !fieldInfo.IsInitOnly
-            && fieldInfo.FieldType == typeof(string))
-        .ToArray();
-
-    string[] roles = constants
-        .Select(fieldInfo => fieldInfo.GetRawConstantValue())
-        .OfType<string>()
-        .ToArray();
-
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-    }
-}
+public  partial class Program{} // supports WebApplicationFactory find the entry point for integration tests
