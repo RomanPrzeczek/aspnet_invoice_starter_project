@@ -195,7 +195,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.MapGet("/", () => "Server runs.");
+app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" })); // Health check endpoint
 
 using (var scope = app.Services.CreateScope())
 {

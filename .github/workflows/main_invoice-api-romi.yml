@@ -1,4 +1,4 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - invoice-api-romi
+﻿name: Build and deploy ASP.Net Core app to Azure Web App - invoice-api-romi
 
 on:
   push:
@@ -71,3 +71,34 @@ jobs:
           app-name: 'invoice-api-romi'
           slot-name: 'Production'
           package: ./out
+
+          # --- NOVÉ KROKY: warmup + health-check ---
+      - name: Wait for warmup
+        shell: pwsh
+        run: |
+          Write-Host "Waiting for app start…"
+          Start-Sleep -Seconds 20
+
+      - name: Smoke / Health check
+        shell: pwsh
+        env:
+          HEALTH_URL: https://invoice-api-romi-dfftdqhaacbab2h0.westeurope-01.azurewebsites.net/health
+        run: |
+          Write-Host "Checking $env:HEALTH_URL …"
+          $maxRetries = 10
+          $delay = 10
+          for ($i=1; $i -le $maxRetries; $i++) {
+            try {
+              $resp = Invoke-WebRequest -Uri $env:HEALTH_URL -UseBasicParsing -TimeoutSec 10 -Method GET
+              if ($resp.StatusCode -eq 200) {
+                Write-Host "✅ Health-check OK."
+                exit 0
+              }
+            } catch {
+              Write-Host "Error: $($_.Exception.Message)"
+            }
+            Write-Host "Attempt $i/$maxRetries failed, waiting $delay sec and retrying…"
+            Start-Sleep -Seconds $delay
+          }
+          Write-Error "❌ Health-check failed – API respond not 200 after deploy."
+          exit 1
