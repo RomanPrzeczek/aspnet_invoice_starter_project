@@ -5,6 +5,7 @@ import {useTranslation} from "react-i18next";
 import { useAuth } from "./AuthContext";
 import eyeShow  from '../assets/eye-password-show-svgrepo-com.svg'
 import eyeHide  from '../assets/eye-password-hide-svgrepo-com.svg'
+import { apiPost } from "../utils/api"; 
 
 const Login = () => {
     const [countdown, setCountdown] = useState(10);
@@ -16,7 +17,7 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const { login } = useAuth();
     const navigate = useNavigate();
-    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    //const apiBase = import.meta.env.VITE_API_BASE_URL;
 
     const handleSubmit = async (e) => {
         //console.log("Z buildu API URL je:", import.meta.env.VITE_API_BASE_URL);
@@ -34,29 +35,25 @@ const Login = () => {
         });
         }, 1000);
 
-        const response = await fetch(`${apiBase}/api/auth`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email, password }),
-            // credentials: "include" // 🍪 cookies varianta (zakomentováno)
-            });
+        try {
+            // 1) preffered endpoint for cookie login (will be added)
+            // Fáze 0: BE má JWT login na /api/auth (cookie login zatím není)
+            const data = await apiPost("/api/auth", { email, password });
 
-            if (response.ok) {
-                const data = await response.json();
-                login(data.token); // 🟢 JWT
-                navigate("/persons"); // ✅ přesměrování po loginu
-
-                // 🍪 cookies:
-                // login(); // není potřeba token
-                navigate("/"); // přesměrování po úspěšném loginu
+            // JWT variant (when BE returns token)
+            if (data?.token) {
+                login(data.token);
             } else {
-                setErrorMessage(t('LoginError'));
-                setIsLoading(false);
-                setCountdown(0);
+            // cookie variant (SignInAsync sets HttpOnly cookie)
+                login();
             }
-
+            navigate("/persons");
+        } catch (error) {
+            console.error(error);
+            setErrorMessage(t("LoginError"));
+            setIsLoading(false);
+            setCountdown(0);
+        }
     };
 
     return (

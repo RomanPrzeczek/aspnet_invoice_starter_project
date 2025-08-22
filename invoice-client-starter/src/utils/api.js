@@ -1,83 +1,84 @@
-// debug comment due to adding git repo environment variable for VITE..URL
-const API_URL = import.meta.env.VITE_API_BASE_URL || "";
+// --- ENV triggers (see .env.development / .env.production) ---
+const DEFAULT_BASE = import.meta.env.MODE === 'development' ? '/api' : '';
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE).replace(/\/$/, '');
+const USE_COOKIES = String(import.meta.env.VITE_USE_COOKIES ?? "true") === "true";
+const CSRF_REQUIRED = String(import.meta.env.VITE_CSRF_REQUIRED ?? "false") === "true";
 
-const fetchData = (url, requestOptions) => {
-    const apiUrl = `${API_URL}${url}`;
-    return fetch(apiUrl, requestOptions)
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-            }
+// 🔎 jednorázový debug výpis (jen v dev/preview-local)
+if (typeof window !== 'undefined'
+  && !window.__API_ENV_LOGGED
+  && ['development','preview-local'].includes(import.meta.env.MODE)) {
+  console.log('[api.js] MODE:', import.meta.env.MODE, 'BASE:', BASE, {
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    USE_COOKIES, CSRF_REQUIRED
+  });
+  window.__API_ENV_LOGGED = true;
+}
 
-            if (requestOptions.method !== "DELETE")
-                return response.json();
-        })
-        .catch((error) => {
-            throw error;
-        });
-};
+// --- Helpers ---
+function getCookie(name) {
+  return document.cookie
+    .split("; ")
+    .find((r) => r.startsWith(name + "="))
+    ?.split("=")[1];
+}
 
-export const apiGet = (url, params = {}, token = null) => {
-    const filteredParams = Object.fromEntries(
-        Object.entries(params).filter(([_, value]) => value != null)
-    );
+function buildUrl(path, params = {}) {
+  const qs = Object.entries(params).filter(([,v]) => v!=null && v!=='');
+  const query = qs.length ? `?${new URLSearchParams(qs)}` : '';
+  let p = path.startsWith('/') ? path : `/${path}`;
+  // když BASE končí /api a path začíná /api, druhé /api odřízni
+  if ((BASE.endsWith('/api') || BASE === '/api') && p.startsWith('/api')) {
+    p = p.replace(/^\/api/, '');
+  }
+  return `${BASE}${p}${query}`;
+}
 
-    const apiUrl = `${url}${new URLSearchParams(filteredParams)}`;
-    const headers = token
-        ? { Authorization: `Bearer ${token}` } // 🟢 JWT token
-        : {};
+async function fetchData(path, { params, token, ...init } = {}) {
+  const url = buildUrl(path, params);
+  const headers = new Headers(init.headers ?? {});
 
-    const requestOptions = {
-        method: "GET",
-        headers,
-        // credentials: "include", // 🍪 cookies varianta (odkomentuj při přechodu)
-    };
+  // JSON defaults
+  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
-    return fetchData(apiUrl, requestOptions);
-};
+  // JWT (legacy) – keeping compatible
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-export const apiPost = (url, data, token = null) => {
-    const headers = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }), // 🟢 JWT token
-    };
+  // Cookies (for FE)
+  if (USE_COOKIES) init.credentials = "include";
 
-    const requestOptions = {
-        method: "POST",
-        headers,
-        body: JSON.stringify(data),
-        // credentials: "include", // 🍪 cookies
-    };
+  // CSRF (will be turned on phase 3)
+  if (USE_COOKIES && CSRF_REQUIRED &&
+      ["POST", "PUT", "PATCH", "DELETE"].includes((init.method ?? "GET").toUpperCase())) {
+    const csrf = getCookie("XSRF-TOKEN");
+    if (csrf) headers.set("X-CSRF-TOKEN", csrf);
+  }
 
-    return fetchData(url, requestOptions);
-};
+  const res = await fetch(url, { ...init, headers });
 
-export const apiPut = (url, data, token = null) => {
-    const headers = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-    };
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText}${body ? ` – ${body}` : ""}`);
+  }
 
-    const requestOptions = {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(data),
-        // credentials: "include", // 🍪 cookies
-    };
+  // 204 / DELETE no body
+  if (res.status === 204 || (init.method ?? "").toUpperCase() === "DELETE") return;
 
-    return fetchData(url, requestOptions);
-};
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return res.json();
+  return res.text();
+}
 
-export const apiDelete = (url, token = null) => {
-    const headers = token
-        ? { Authorization: `Bearer ${token}` }
-        : {};
+// --- public shortcuts ---
+export const apiGet = (path, params = {}, token = null) =>
+  fetchData(path, { method: "GET", params, token });
 
-    const requestOptions = {
-        method: "DELETE",
-        headers,
-        // credentials: "include", // 🍪 cookies
-    };
+export const apiPost = (path, data, token = null) =>
+  fetchData(path, { method: "POST", body: JSON.stringify(data), token });
 
-    return fetchData(url, requestOptions);
-};
+export const apiPut = (path, data, token = null) =>
+  fetchData(path, { method: "PUT", body: JSON.stringify(data), token });
+
+export const apiDelete = (path, token = null) =>
+  fetchData(path, { method: "DELETE", token });
