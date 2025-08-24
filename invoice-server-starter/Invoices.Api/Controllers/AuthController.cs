@@ -7,9 +7,11 @@ using Invoices.Api.Interfaces;
 using Invoices.Api.Managers;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Invoices.Api.Controllers
 {
@@ -126,14 +128,39 @@ namespace Invoices.Api.Controllers
                 var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
                 if (!isAdmin && !_personManager.HasActivePerson(user.Id))
                 {
-                    return Unauthorized("Účet byl deaktivován.");
+                    return Unauthorized("Account deactivated.");
                 }
 
-
                 var roles = await _userManager.GetRolesAsync(user);
+
+                // cookie login, if active and FE requested (production mode)
+                var enableCookieAuth = HttpContext.RequestServices
+                    .GetRequiredService<IConfiguration>()
+                    .GetSection("Security").GetValue("EnableCookieAuth", true); // taken from Azure ENV (prod-mode) or appsettings.json (debug mode)
+
+                Console.WriteLine($"EnableCookieAuth={enableCookieAuth}, UseCookie={authDto.UseCookie}");
+                Console.WriteLine("🍪 Taking cookie branch");
+
+                if (enableCookieAuth && authDto.UseCookie == true)
+                {
+                    var claims = new List<Claim> // sets claims (e.g. user id, email)
+                    {
+                        new(ClaimTypes.NameIdentifier, user.Id),
+                        new(ClaimTypes.Email, user.Email!)
+                    };
+
+                    claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r))); // add roles to claims
+
+                    var identity = new ClaimsIdentity(claims, "AppCookie"); // create identity with claims for cookie auth
+                    await HttpContext.SignInAsync("AppCookie", new ClaimsPrincipal(identity));
+
+                    return Ok(new { ok = true, auth = "cookie" });
+                }
+
+                // JWT variant for debugging in Postman
                 var token = GenerateJwtToken(user, roles);
 
-                return Ok(new { token });
+                return Ok(new { token, auth = "jwt" });
             }
             catch (Exception ex)
             {
@@ -151,16 +178,18 @@ namespace Invoices.Api.Controllers
         [HttpDelete("auth")]
         public async Task<IActionResult> LogOutUser()
         {
-            await _signInManager.SignOutAsync();
+            await HttpContext.SignOutAsync("AppCookie"); // cookie auth – deletes 'app_auth'
+            
+            await _signInManager.SignOutAsync(); // (optional) Identity sign-out
 
-            return Ok(new { });
+            return NoContent(); // 204 No Content = logout respond
         }
 
         /// <summary>
         /// Gets the currently authenticated user's information.
         /// </summary>
         /// <returns></returns>
-        [Authorize]
+        [Authorize(AuthenticationSchemes = "AppCookie," + JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("auth")]
         public async Task<IActionResult> GetUserInfo()
         {
@@ -169,6 +198,10 @@ namespace Invoices.Api.Controllers
             if (user is not null)
             {
                 UserDto userDto = await ConvertToUserDTO(user);
+                
+                // (optional – for debug) user authentication tool (if jwt or cookie)
+                Response.Headers["X-Auth-Scheme"] = User.Identity?.AuthenticationType ?? "";
+                
                 return Ok(userDto);
             }
 
@@ -202,34 +235,6 @@ namespace Invoices.Api.Controllers
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        /// <summary>
-        /// Checks if the user is logged in and returns their information.
-        /// </summary>
-        /// <param name="userManager"></param>
-        /// <returns></returns>
-        [Authorize]
-        [HttpGet("isLogged")]
-        public async Task<IActionResult> GetCurrentUser([FromServices] UserManager<IdentityUser> userManager)
-        {
-            var user = await userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                _logger.LogWarning("An unauthorized attempt to access /api/auth/isLogged.");
-                return Unauthorized(); 
-            }
-
-            // Získání role (nepovinné, ale užitečné)
-            var roles = await userManager.GetRolesAsync(user);
-
-            return Ok(new
-            {
-                user.Id,
-                user.Email,
-                user.UserName,
-                Roles = roles
-            });
         }
     }
 }

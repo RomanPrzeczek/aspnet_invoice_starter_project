@@ -12,8 +12,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 var logger = LoggerFactory
     .Create(builder => builder.AddConsole())
@@ -103,16 +105,28 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = jwtIssuer,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
         };
-    })
-    .AddCookie("AppCookie",opt =>
-    {
-        opt.Cookie.Name = "app_auth";
-        opt.Cookie.HttpOnly = true;
-        opt.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        opt.Cookie.SameSite = SameSiteMode.Lax; // or strict, beware of external redirects !
-        opt.SlidingExpiration = true;
-        opt.ExpireTimeSpan = TimeSpan.FromMinutes(30);
     });
+
+if (enableCookieAuth)
+{
+    builder.Services.AddAuthentication()
+        .AddCookie("AppCookie", opt =>
+        {
+            opt.Cookie.Name = "app_auth";
+            opt.Cookie.HttpOnly = true;
+            opt.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            opt.Cookie.SameSite = SameSiteMode.None; // or strict, beware of external redirects !
+            opt.SlidingExpiration = true;
+            opt.ExpireTimeSpan = TimeSpan.FromDays(7);
+
+            // API chování: žádné redirecty, ale 401/403
+            opt.Events = new CookieAuthenticationEvents
+            {
+                OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
+                OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; }
+            };
+        });
+}
 
 // Antiforgery configuration for CSRF protection and CORS setup (under flag EnableCookieAuth)
 var isDev = builder.Environment.IsDevelopment();
@@ -125,7 +139,7 @@ if (enableCookieAuth)
         o.Cookie.SameSite = SameSiteMode.Lax;
         o.Cookie.SecurePolicy = isDev 
         ? CookieSecurePolicy.SameAsRequest // for development FE use (HTTP)
-        : CookieSecurePolicy.Always; // for peoduction use (HTTPS only)
+        : CookieSecurePolicy.Always; // for production use (HTTPS only)
     });
 
     builder.Services.AddCors(options =>
