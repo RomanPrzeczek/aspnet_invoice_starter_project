@@ -38,21 +38,18 @@ async function fetchData(path, { params, token, ...init } = {}) {
   const url = buildUrl(path, params);
   const headers = new Headers(init.headers ?? {});
 
+  // JWT header sent only if cookie OFF
+  if (token && !USE_COOKIES) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   // JSON defaults
   if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
-  // JWT (legacy) – keeping compatible
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-
-  // Cookies (for FE)
-  if (USE_COOKIES) init.credentials = "include";
-
-  // CSRF (will be turned on phase 3)
-  if (USE_COOKIES && CSRF_REQUIRED &&
-      ["POST", "PUT", "PATCH", "DELETE"].includes((init.method ?? "GET").toUpperCase())) {
-    const csrf = getCookie("XSRF-TOKEN");
-    if (csrf) headers.set("X-CSRF-TOKEN", csrf);
+  // Cookies (for FE) only if ON, otherwise JWT token
+  if (USE_COOKIES) {
+    init.credentials = "include";
   }
 
   const res = await fetch(url, { ...init, headers });
