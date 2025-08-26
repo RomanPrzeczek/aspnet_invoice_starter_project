@@ -3,11 +3,15 @@ using Invoices.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
+
 
 namespace Invoices.Api.Controllers;
 
-[Route("api")]
 [ApiController]
+[Route("api")]
+[Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
+[EnableCors("FeCors")]
 public class PersonsController : ControllerBase
 {
     private readonly IPersonManager personManager;

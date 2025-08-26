@@ -29,11 +29,6 @@ var builder = WebApplication.CreateBuilder(args);
 var security = builder.Configuration.GetSection("Security");    // get the Security section from aspnet core configuration
 bool enableCookieAuth = security.GetValue<bool>("EnableCookieAuth",true); // get EnableCookieAuth value, default to true if not set for cookie authentication
 bool enableCsrfValidation = security.GetValue<bool>("EnableCsrfValidation",false); // get value and default to false if not set for CSRF protection
-string[] feOrigins = security.GetSection("FeOrigins").Get<string[]>() ?? new[] 
-{ 
-    "http://localhost:3000", 
-    "https://localhost:5173" 
-}; // get FE origins from configuration, default to local dev servers for development
 
 // Configuration of DB
 var connectionString = builder.Configuration.GetConnectionString("AzureConnection"); // was .GetConnectionString("LocalInvoicesConnection")
@@ -50,12 +45,12 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger configuration
-builder.Services.AddSwaggerGen(options =>
-    options.SwaggerDoc("invoices", new OpenApiInfo
-    {
-        Version = "v1",
-        Title = "Invoices"
-    }));
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("browser", new() { Title = "Invoices – Browser", Version = "v1" });
+    c.SwaggerDoc("integrations", new() { Title = "Invoices – Integrations", Version = "v1" });
+    c.DocInclusionPredicate((doc, desc) => desc.GroupName == doc);
+});
 
 // Repositories registration
 builder.Services.AddScoped<IPersonRepository, PersonRepository>(); 
@@ -64,6 +59,7 @@ builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 // Managers registration
 builder.Services.AddScoped<IPersonManager, PersonManager>();
 builder.Services.AddScoped<IInvoiceManager,InvoiceManager>();
+builder.Services.AddScoped<IJwtTokenManager, JwtTokenManager>();
 
 // Automapper registration
 builder.Services.AddAutoMapper(typeof(AutomapperConfigurationProfile));
@@ -128,49 +124,63 @@ if (enableCookieAuth)
         });
 }
 
-// Antiforgery configuration for CSRF protection and CORS setup (under flag EnableCookieAuth)
+// Adding Authorization policies to distinguish between JWT and Cookie auth, farther in controllers (JWT only for debugging)
+builder.Services.AddAuthorization(o =>
+{
+    o.AddPolicy("BrowserOnly", p => p
+        .AddAuthenticationSchemes("AppCookie")
+        .RequireAuthenticatedUser());
+
+    o.AddPolicy("JwtOnly", p => p
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser());
+
+    o.AddPolicy("AdminOnly", p => p
+    .AddAuthenticationSchemes("AppCookie")
+    .RequireRole("Admin"));
+});
+
 var isDev = builder.Environment.IsDevelopment();
+
+// Antiforgery – jen registrace pro F1 (validaci zapneme ve F3)
 if (enableCookieAuth)
 {
     builder.Services.AddAntiforgery(o =>
     {
         o.HeaderName = "X-CSRF-TOKEN";
-        o.Cookie.Name = "XSRF-TOKEN";                 // readable cookie for FE (not HttpOnly)
+        o.Cookie.Name = "XSRF-TOKEN";
+        o.Cookie.HttpOnly = false; // FE musí cookie přečíst (double-submit pattern ve F3)
         o.Cookie.SameSite = SameSiteMode.Lax;
-        o.Cookie.SecurePolicy = isDev 
-        ? CookieSecurePolicy.SameAsRequest // for development FE use (HTTP)
-        : CookieSecurePolicy.Always; // for production use (HTTPS only)
+        o.Cookie.SecurePolicy = isDev
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
     });
+}
 
-    builder.Services.AddCors(options =>
-    {
-        options.AddDefaultPolicy(policy =>
-        {
-            policy.WithOrigins(feOrigins)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();               // for cookies
-        });
-    });
-}
-else
+// CORS – dvě pojmenované policy
+var feOrigins = builder.Configuration.GetSection("Cors:FeOrigins").Get<string[]>()
+                ?? new[] {
+                    "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app",
+                    "http://localhost:3000",
+                    "https://localhost:5173"
+                };
+
+builder.Services.AddCors(options =>
 {
-    // former (JWT only) CORS 
-    builder.Services.AddCors(options =>
-    {
-        options.AddDefaultPolicy(policy =>
-        {
-            policy.WithOrigins(
-                "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app",
-                "http://localhost:3000",
-                "https://localhost:5173"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-        });
-    });
-}
+    // FE (browser, cookies)
+    options.AddPolicy("FeCors", p => p
+        .WithOrigins(feOrigins)       // nutně přesné originy (scheme + port)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());         // kvůli cookies
+
+    // Integrace (JWT, žádné cookies)
+    options.AddPolicy("IntegrationsCors", p => p
+        .AllowAnyOrigin()             // nebo konkrétní seznam, ale bez credentials
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 
 
 
@@ -256,9 +266,10 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    app.UseSwaggerUI(o =>
     {
-        options.SwaggerEndpoint("invoices/swagger.json", "Invoices - v1");
+        o.SwaggerEndpoint("/swagger/browser/swagger.json", "Invoices – Browser");
+        o.SwaggerEndpoint("/swagger/integrations/swagger.json", "Invoices – Integrations");
     });
 }
 

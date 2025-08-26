@@ -24,14 +24,16 @@ namespace Invoices.Api.Controllers
         private readonly IPersonManager _personManager;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
+        private readonly IJwtTokenManager _jwtTokenManager;
 
-        public AuthController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IPersonManager personManager, IConfiguration configuration, ILogger<AuthController> logger)
+        public AuthController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IPersonManager personManager, IConfiguration configuration, ILogger<AuthController> logger, IJwtTokenManager jwtTokenManager)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _personManager = personManager;
             _configuration = configuration;
             _logger = logger;
+            _jwtTokenManager = jwtTokenManager;
         }
 
         /// <summary>
@@ -158,7 +160,7 @@ namespace Invoices.Api.Controllers
                 }
 
                 // JWT variant for debugging in Postman
-                var token = GenerateJwtToken(user, roles);
+                var token = _jwtTokenManager.CreateToken(user, roles);
 
                 return Ok(new { token, auth = "jwt" });
             }
@@ -189,7 +191,7 @@ namespace Invoices.Api.Controllers
         /// Gets the currently authenticated user's information.
         /// </summary>
         /// <returns></returns>
-        [Authorize(AuthenticationSchemes = "AppCookie," + JwtBearerDefaults.AuthenticationScheme)]
+        [Authorize(Policy = "BrowserOnly")]
         [HttpGet("auth")]
         public async Task<IActionResult> GetUserInfo()
         {
@@ -206,35 +208,6 @@ namespace Invoices.Api.Controllers
             }
 
             return NotFound();
-        }
-
-        /// <summary>
-        /// JWT authentication.
-        /// </summary>
-        /// 
-        private string GenerateJwtToken(IdentityUser user, IList<string> roles)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.UserName!)
-            };
-
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

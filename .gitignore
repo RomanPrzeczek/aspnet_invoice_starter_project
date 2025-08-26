@@ -59,6 +59,7 @@ NCrunch_*
 nCrunchTemp_*
 OpenCover/
 BenchmarkDotNet.Artifacts/
+/invoice-server-starter/Invoices.Tests.Smoke/cookies.txt
 
 # ============================================
 # 🧰 NuGet / Paket / FAKE / tools

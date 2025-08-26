@@ -2,11 +2,16 @@
 using Invoices.Api.Interfaces;
 using Invoices.Api.Models;
 using Invoices.Api.Managers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 
 namespace Invoices.Api.Controllers
 {
-    [Route("api")]
     [ApiController]
+    [Route("api")]
+    [Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
+    [EnableCors("FeCors")]
+    [ApiExplorerSettings(GroupName = "browser")]
     public class InvoiceController : ControllerBase
     {
         private readonly IInvoiceManager _invoiceManager;
