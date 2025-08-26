@@ -226,7 +226,7 @@ app.Use(async (context, next) =>
 
 
 // Configure the HTTP request pipeline for the authentication and authorization
-app.UseCors(); // Enable CORS for the application
+app.UseCors("FeCors"); // Enable CORS (cookie variant) for the application
 
 // Enable Antiforgery for CSRF protection and cookie auth
 if (enableCookieAuth)
