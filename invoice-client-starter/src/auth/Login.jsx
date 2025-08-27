@@ -52,7 +52,7 @@ const Login = () => {
 
     try {
       // BE vrací buď { token } (JWT), nebo { ok: true, auth: "cookie" }
-      const data = await apiPost("/api/auth", { email, password });
+      const data = await apiPost("/api/auth", { email, password, useCookie: true });
 
       if (data?.token) {
         // JWT varianta
