@@ -56,6 +56,7 @@ namespace Invoices.Api.Controllers
         /// <param name="registerDto"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
+        [AllowAnonymous]
         [HttpPost("user")]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterDto registerDto)
         {
@@ -107,6 +108,7 @@ namespace Invoices.Api.Controllers
         /// </summary>
         /// <param name="authDto"></param>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpPost("auth")]
         public async Task<IActionResult> Login([FromBody] AuthDto authDto)
         {
