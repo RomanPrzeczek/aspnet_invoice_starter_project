@@ -1,22 +1,16 @@
 ﻿using Invoices.Api.Models;
-using Invoices.Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Invoices.Api.Interfaces;
-using Invoices.Api.Managers;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authentication;
 
 namespace Invoices.Api.Controllers
 {
-    [Route("api")]
     [ApiController]
+    [Route("api")]
+    [Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
     public class AuthController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
@@ -181,7 +175,7 @@ namespace Invoices.Api.Controllers
         public async Task<IActionResult> LogOutUser()
         {
             await HttpContext.SignOutAsync("AppCookie"); // cookie auth – deletes 'app_auth'
-            
+
             await _signInManager.SignOutAsync(); // (optional) Identity sign-out
 
             return NoContent(); // 204 No Content = logout respond
@@ -200,10 +194,10 @@ namespace Invoices.Api.Controllers
             if (user is not null)
             {
                 UserDto userDto = await ConvertToUserDTO(user);
-                
+
                 // (optional – for debug) user authentication tool (if jwt or cookie)
                 Response.Headers["X-Auth-Scheme"] = User.Identity?.AuthenticationType ?? "";
-                
+
                 return Ok(userDto);
             }
 

@@ -1,15 +1,17 @@
 ﻿using AutoMapper;
 using Invoices.Api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Invoices.Api.Controllers
 {
-    [Route("api")]
     [ApiController]
+    [Route("api")]
+    [Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
     public class IdentificationController : ControllerBase
     {
         private readonly IInvoiceManager invoiceManager;
-        public IdentificationController(IInvoiceManager invoiceManager, IMapper mapper) 
+        public IdentificationController(IInvoiceManager invoiceManager, IMapper mapper)
         {
             this.invoiceManager = invoiceManager;
         }
