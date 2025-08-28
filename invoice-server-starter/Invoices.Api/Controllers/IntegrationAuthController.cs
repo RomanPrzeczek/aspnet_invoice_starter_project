@@ -7,7 +7,7 @@ using Invoices.Api.Interfaces;
 namespace Invoices.Api.Controllers
 {
     [ApiController]
-    [Route("api/integrations/[controller]")]
+    [Route("api/integrations/auth")]
     [EnableCors("IntegrationsCors")]
     [ApiExplorerSettings(GroupName = "integrations")]
     public class IntegrationAuthController : ControllerBase
