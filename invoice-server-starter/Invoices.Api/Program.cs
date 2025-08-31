@@ -172,8 +172,8 @@ builder.Services.AddCors(options =>
     // FE (browser, cookies)
     options.AddPolicy("FeCors", p => p
         .WithOrigins(feOrigins)       // nutně přesné originy (scheme + port)
-        .AllowAnyHeader()
-        .AllowAnyMethod()
+        .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        .WithHeaders("content-type", "x-csrf-token")   // ⬅️ DŮLEŽITÉ
         .AllowCredentials());         // kvůli cookies
 
     // Integrace (JWT, žádné cookies)
@@ -273,6 +273,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapControllers().RequireCors("FeCors");
 
 if (app.Environment.IsDevelopment())
 {
