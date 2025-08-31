@@ -150,7 +150,9 @@ if (enableCookieAuth)
         o.HeaderName = "X-CSRF-TOKEN";
         o.Cookie.Name = "XSRF-TOKEN";
         o.Cookie.HttpOnly = false; // FE musí cookie přečíst (double-submit pattern ve F3)
-        o.Cookie.SameSite = SameSiteMode.Lax;
+        o.Cookie.SameSite = isDev
+            ? SameSiteMode.Lax
+            : SameSiteMode.None;
         o.Cookie.SecurePolicy = isDev
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
@@ -250,8 +252,17 @@ if (enableCookieAuth)
                 HttpMethods.IsPatch(ctx.Request.Method) ||
                 HttpMethods.IsDelete(ctx.Request.Method))
             {
-                var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();
-                await anti.ValidateRequestAsync(ctx);
+                try
+                {
+                    var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();
+                    await anti.ValidateRequestAsync(ctx);
+                }
+                catch (AntiforgeryValidationException)
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await ctx.Response.WriteAsync("CSRF validation failed");
+                    return;
+                }
             }
             await next();
         });
