@@ -67,21 +67,40 @@ async function fetchData(path, { params, token, ...init } = {}) {
   if (USE_COOKIES) init.credentials = "include";
 
   // CSRF pro mutace
+  // --- CSRF pro mutace (POST/PUT/PATCH/DELETE) ---
   const method = (init.method ?? "GET").toUpperCase();
-  const isMutating = ["POST","PUT","PATCH","DELETE"].includes(method);
-  if (needCsrf() && isMutating) {
-    await ensureCsrf();
-    if (__csrfToken) headers.set("X-CSRF-TOKEN", __csrfToken);
+  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+  if (USE_COOKIES && isMutating) {
+    // pokud je striktní režim, nejdřív si token vyžádej
+    if (CSRF_REQUIRED && !__csrfToken) {
+      await ensureCsrf();
+    }
+
+    // pošli, co máme: token z paměti nebo rovnou z cookie
+    const cookieToken =
+      typeof document !== "undefined" &&
+      document.cookie.split("; ").find(r => r.startsWith("XSRF-TOKEN="))?.split("=")[1];
+
+    const headerToken = __csrfToken || cookieToken;
+    if (headerToken) {
+      headers.set("X-CSRF-TOKEN", headerToken);
+    }
   }
 
   let res = await fetch(url, { ...init, headers });
 
-  // auto-retry při 400/403 (token expiroval)
-  if (!res.ok && (res.status === 400 || res.status === 403) && needCsrf() && isMutating) {
-    __csrfToken = null;
+  // --- auto-retry při expirovaném tokenu ---
+  if (!res.ok && (res.status === 400 || res.status === 403) && USE_COOKIES && isMutating) {
+    __csrfToken = null;               // vyžádej nový
     await ensureCsrf();
-    if (__csrfToken) {
-      headers.set("X-CSRF-TOKEN", __csrfToken);
+    const cookieToken =
+      typeof document !== "undefined" &&
+      document.cookie.split("; ").find(r => r.startsWith("XSRF-TOKEN="))?.split("=")[1];
+    const headerToken = __csrfToken || cookieToken;
+
+    if (headerToken) {
+      headers.set("X-CSRF-TOKEN", headerToken);
       res = await fetch(url, { ...init, headers });
     }
   }
