@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { apiPost } from "../utils/api";
-import { useAuth } from "./AuthContext";
 
+import { useAuth } from "./AuthContext";
+import { apiGet, apiPost } from "../utils/api";
 import eyeShow from "../assets/eye-password-show-svgrepo-com.svg";
 import eyeHide from "../assets/eye-password-hide-svgrepo-com.svg";
 
@@ -44,6 +44,15 @@ const Login = () => {
     }
   };
 
+  // Volitelná „pojistka“: před prvním POST si vyžádej CSRF token (api.js už to umí sám)
+  async function ensureCsrf() {
+    try {
+      await apiGet("/api/csrf");
+    } catch {
+      /* ticho – api.js si CSRF primne sám při POST/PUT/DELETE */
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -51,16 +60,23 @@ const Login = () => {
     startTimer();
 
     try {
-      // BE vrací buď { token } (JWT), nebo { ok: true, auth: "cookie" }
-      const data = await apiPost("/api/auth", { email, password, useCookie: true });
+      // (volitelné) – viz poznámku výš
+      await ensureCsrf();
+
+      // BE může vrátit buď { token } (JWT), nebo { ok:true, auth:"cookie" }
+      const data = await apiPost("/api/auth", {
+        email,
+        password,
+        useCookie: true, // říká BE preferuji cookie větev, pokud je povolená
+      });
 
       if (data?.token) {
-        // JWT varianta
+        // JWT větev (legacy / integrations)
         login(data.token);
       } else {
-        // Cookie varianta – BE nasetoval HttpOnly cookie
+        // Cookie větev – server nastavil HttpOnly cookie
         login(null);
-        await refreshUser(); // okamžitě načti usera z cookie session
+        await refreshUser(); // rovnou načíst /api/auth a dát usera do contextu
       }
 
       navigate("/persons");
@@ -73,6 +89,9 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // úklid časovače při odmountování
+  useEffect(() => () => stopTimer(), []);
 
   return (
     <div className="container mt-5">
@@ -90,7 +109,7 @@ const Login = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} autoComplete="on">
         <div className="mb-3">
           <label htmlFor="email">{t("Email") || "Email"}</label>
           <input
@@ -99,7 +118,7 @@ const Login = () => {
             className="form-control"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            autoComplete="username"
+            autoComplete="username email"
             required
           />
         </div>
@@ -119,7 +138,11 @@ const Login = () => {
             <button
               type="button"
               className="password-toggle-icon"
-              aria-label={showPassword ? t("HidePassword") || "Hide password" : t("ShowPassword") || "Show password"}
+              aria-label={
+                showPassword
+                  ? t("HidePassword") || "Hide password"
+                  : t("ShowPassword") || "Show password"
+              }
               onClick={() => setShowPassword((s) => !s)}
               style={{ background: "transparent", border: 0, padding: 0 }}
             >

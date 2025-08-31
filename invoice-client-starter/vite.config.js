@@ -8,7 +8,7 @@ export default defineConfig({
       '/api': {
         'target' : 'https://localhost:7071', 
         changeOrigin: true,
-        secure: false
+        secure: false // self-signed in dev only
       }
     }
   }
