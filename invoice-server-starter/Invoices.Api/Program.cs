@@ -224,15 +224,25 @@ using (var scope = app.Services.CreateScope())
 }
 
 // === Global try/catch logger (passthrough pro 500) ===
-app.Use(async (context, next) =>
+// app.Use(async (context, next) =>
+// {
+//     try { await next(); }
+//     catch (Exception ex)
+//     {
+//         logger.LogError(ex, "❌ Runtime exception");
+//         throw;
+//     }
+// });
+
+app.Use(async (ctx, next) =>
 {
-    try { await next(); }
-    catch (Exception ex)
+    if (ctx.Request.Path.StartsWithSegments("/api/csrf"))
     {
-        logger.LogError(ex, "❌ Runtime exception");
-        throw;
+        logger.LogInformation("➡️ entering pipeline for {path}, method {m}", ctx.Request.Path, ctx.Request.Method);
     }
+    await next();
 });
+
 
 // === Pipeline pořadí ===
 app.UseCors("FeCors");          // 1) CORS
@@ -279,6 +289,44 @@ if (app.Environment.IsDevelopment())
 
 // 6) Endpoints
 app.MapControllers(); // jen jednou – CORS globálně řeší UseCors výše
+
+// „drátový“ endpoint přes MapGet na /api/csrf2 (mimo MVC)
+// obejde MVC i jakékoli filtry a ověří čistě antiforgery službu
+app.MapGet("/api/csrf2", async (HttpContext ctx) =>
+{
+    var log = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Csrf2");
+    try
+    {
+        var anti = ctx.RequestServices.GetService<IAntiforgery>();
+        if (anti == null)
+        {
+            log.LogError("IAntiforgery service NULL in /api/csrf2");
+            return Results.Problem("Antiforgery missing", statusCode: 500);
+        }
+
+        var tokens = anti.GetTokens(ctx); // jen vygeneruj
+        ctx.Response.Cookies.Delete("XSRF-TOKEN");
+        ctx.Response.Cookies.Delete("XSRF-TOKEN-v2");
+
+        ctx.Response.Cookies.Append("XSRF-TOKEN-v2", tokens.CookieToken!, new CookieOptions
+        {
+            HttpOnly = false, Secure = true, SameSite = SameSiteMode.None, Path = "/", IsEssential = true
+        });
+
+        ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
+        ctx.Response.Headers.Pragma = "no-cache";
+        ctx.Response.Headers.Expires = "0";
+
+        return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN", src = "mapget" });
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "❌ /api/csrf2 failed");
+        return Results.Problem(ex.Message, statusCode: 500);
+    }
+})
+.RequireCors("FeCors");
+
 
 // Health/root
 app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" }));
