@@ -260,13 +260,24 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" }));
 app.MapGet("/",       () => Results.Ok(new { server_started = true }));
 
 // CSRF endpoint – vrací token i nastaví cookie
-app.MapGet("/api/csrf", (HttpContext ctx, IAntiforgery anti) =>
+app.MapGet("/api/csrf", async (HttpContext ctx) =>
 {
-    var tokens = anti.GetAndStoreTokens(ctx);
-    ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
-    ctx.Response.Headers.Pragma      = "no-cache";
-    ctx.Response.Headers.Expires     = "0";
-    return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
+    try
+    {
+        var anti   = ctx.RequestServices.GetRequiredService<IAntiforgery>();
+        var tokens = anti.GetAndStoreTokens(ctx);
+
+        ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
+        ctx.Response.Headers.Pragma      = "no-cache";
+        ctx.Response.Headers.Expires     = "0";
+
+        return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ /api/csrf failed");
+        return Results.Problem("CSRF endpoint failed", statusCode: 500);
+    }
 })
 .RequireCors("FeCors");
 
