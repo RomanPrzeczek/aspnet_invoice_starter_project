@@ -179,7 +179,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddAntiforgery(o =>
 {
     o.HeaderName        = "X-CSRF-TOKEN";
-    o.Cookie.Name       = "XSRF-TOKEN";
+    o.Cookie.Name       = "XSRF-TOKEN-v2";
     o.Cookie.HttpOnly   = false; // token bereme z JSON /api/csrf; cookie je pro double-submit pattern
     o.Cookie.SameSite   = isDev ? SameSiteMode.Lax : SameSiteMode.None;
     o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
