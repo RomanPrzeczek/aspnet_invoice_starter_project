@@ -300,6 +300,23 @@ app.MapGet("/diag/dp", () =>
     }
 });
 
+// ověření, že je IAntiforgery registrované
+app.MapGet("/diag/anti", (IServiceProvider sp) =>
+{
+    var ok = sp.GetService<IAntiforgery>() != null;
+    return Results.Ok(new { antiforgeryRegistered = ok });
+});
+
+// výpis všech namapovaných rout:
+app.MapGet("/diag/endpoints", (IEnumerable<EndpointDataSource> sources) =>
+{
+    var list = sources.SelectMany(s => s.Endpoints)
+                      .OfType<RouteEndpoint>()
+                      .Select(e => e.RoutePattern.RawText)
+                      .OrderBy(x => x);
+    return Results.Json(list);
+});
+
 // CSRF endpoint – nastaví cookie a vrátí token v JSON (no-store)
 // app.MapGet("/api/csrf", (HttpContext ctx) =>
 // {
