@@ -113,7 +113,7 @@ namespace Invoices.Api.Controllers
         [HttpPost("auth")]
         public async Task<IActionResult> Login([FromBody] AuthDto authDto)
         {
-            Console.WriteLine("👉 Login endpoint triggered.");
+            _logger.LogInformation("👉 Login endpoint triggered.");
 
             try
             {
@@ -132,42 +132,56 @@ namespace Invoices.Api.Controllers
 
                 var roles = await _userManager.GetRolesAsync(user);
 
-                // cookie login, if active and FE requested (production mode)
+                // feature flag z konfigurace
                 var enableCookieAuth = HttpContext.RequestServices
                     .GetRequiredService<IConfiguration>()
-                    .GetSection("Security").GetValue("EnableCookieAuth", true); // taken from Azure ENV (prod-mode) or appsettings.json (debug mode)
+                    .GetSection("Security").GetValue("EnableCookieAuth", true);
 
-                Console.WriteLine($"EnableCookieAuth={enableCookieAuth}, UseCookie={authDto.UseCookie}");
-                Console.WriteLine("🍪 Taking cookie branch");
+                var useCookie = authDto.UseCookie ?? true; // volitelně: defaultuj na cookie, když je povolena
+                _logger.LogInformation("🍪 EnableCookieAuth={EnableCookieAuth}, UseCookie={UseCookie}", enableCookieAuth, useCookie);
 
-                if (enableCookieAuth && authDto.UseCookie == true)
+                if (enableCookieAuth && useCookie)
                 {
-                    var claims = new List<Claim> // sets claims (e.g. user id, email)
+                    // claims
+                    var claims = new List<Claim>
                     {
                         new(ClaimTypes.NameIdentifier, user.Id),
                         new(ClaimTypes.Email, user.Email!)
                     };
+                    claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-                    claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r))); // add roles to claims
+                    // cookie sign-in (schéma musí odpovídat registraci v Program.cs)
+                    var identity  = new ClaimsIdentity(claims, "AppCookie");
+                    var principal = new ClaimsPrincipal(identity);
 
-                    var identity = new ClaimsIdentity(claims, "AppCookie"); // create identity with claims for cookie auth
-                    await HttpContext.SignInAsync("AppCookie", new ClaimsPrincipal(identity));
+                    // volitelně: nastavení perzistence/expirace dle "remember me"
+                    var authProps = new AuthenticationProperties
+                    {
+                        IsPersistent = true, // nebo podle authDto.RememberMe
+                        // ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7) // volitelně, jinak řídí cookie options
+                    };
 
-                    return Ok(new { ok = true, auth = "cookie" });
+                    await HttpContext.SignInAsync("AppCookie", principal, authProps);
+
+                    // 🔁 DŮLEŽITÉ: po přihlášení vydat nový CSRF token (navázaný už na přihlášeného uživatele)
+                    var anti = HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
+                    var tokens = anti.GetAndStoreTokens(HttpContext);
+
+                    // FE si tenhle `csrf` hned uloží a použije pro další POSTy
+                    return Ok(new { ok = true, auth = "cookie", csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
                 }
 
-                // JWT variant for debugging in Postman
+                // JWT varianta (Postman / integrace)
                 var token = _jwtTokenManager.CreateToken(user, roles);
-
                 return Ok(new { token, auth = "jwt" });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Login error: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
+                _logger.LogError(ex, "❌ Login error");
                 throw;
             }
         }
+
 
 
         /// <summary>

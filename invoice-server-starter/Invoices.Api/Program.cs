@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.Extensions.Options;
 
 var logger = LoggerFactory
     .Create(builder => builder.AddConsole())
@@ -25,106 +24,103 @@ logger.LogInformation("🚀 Starting app...");
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration of cookie authentication and CSRF protection
-var security = builder.Configuration.GetSection("Security");    // get the Security section from aspnet core configuration
-bool enableCookieAuth = security.GetValue<bool>("EnableCookieAuth",true); // get EnableCookieAuth value, default to true if not set for cookie authentication
-bool enableCsrfValidation = security.GetValue<bool>("EnableCsrfValidation",false); // get value and default to false if not set for CSRF protection
+// === Security flags (appsettings: Security:EnableCookieAuth, Security:EnableCsrfValidation) ===
+var security = builder.Configuration.GetSection("Security");
+bool enableCookieAuth     = security.GetValue<bool>("EnableCookieAuth",     true);
+bool enableCsrfValidation = security.GetValue<bool>("EnableCsrfValidation", false);
 
-// Configuration of DB
-var connectionString = builder.Configuration.GetConnectionString("AzureConnection"); // was .GetConnectionString("LocalInvoicesConnection")
+// === DB ===
+var connectionString = builder.Configuration.GetConnectionString("AzureConnection");
 builder.Services.AddDbContext<InvoicesDbContext>(options =>
     options.UseSqlServer(connectionString)
-        .UseLazyLoadingProxies()
-        .ConfigureWarnings(x => x.Ignore(CoreEventId.LazyLoadOnDisposedContextWarning)));
+           .UseLazyLoadingProxies()
+           .ConfigureWarnings(x => x.Ignore(CoreEventId.LazyLoadOnDisposedContextWarning)));
 
-// Adding converter of C# data to JSON format for need of JS FE
-builder.Services.AddControllers().AddJsonOptions(options =>
-    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+// === MVC + JSON ===
+builder.Services.AddControllers()
+    .AddJsonOptions(opt =>
+        opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-// Discovers the API endpoints and their metadata for use in Swagger generation
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger configuration
+// === Swagger ===
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("browser", new() { Title = "Invoices – Browser", Version = "v1" });
+    c.SwaggerDoc("browser",      new() { Title = "Invoices – Browser",      Version = "v1" });
     c.SwaggerDoc("integrations", new() { Title = "Invoices – Integrations", Version = "v1" });
     c.DocInclusionPredicate((doc, desc) => desc.GroupName == doc);
 });
 
-// Repositories registration
-builder.Services.AddScoped<IPersonRepository, PersonRepository>(); 
+// === Repositories & Managers ===
+builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-
-// Managers registration
-builder.Services.AddScoped<IPersonManager, PersonManager>();
-builder.Services.AddScoped<IInvoiceManager,InvoiceManager>();
+builder.Services.AddScoped<IPersonManager,  PersonManager>();
+builder.Services.AddScoped<IInvoiceManager, InvoiceManager>();
 builder.Services.AddScoped<IJwtTokenManager, JwtTokenManager>();
 
-// Automapper registration
+// === AutoMapper ===
 builder.Services.AddAutoMapper(typeof(AutomapperConfigurationProfile));
 
-// Registering Identity for authentication
+// === Identity ===
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
     options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<InvoicesDbContext>(); // using EF Core for Identity storage
+.AddEntityFrameworkStores<InvoicesDbContext>();
 
-// Configure Identity options with JWT token
-var jwtKey = builder.Configuration["Jwt:Key"];
+// === JWT (pro Postman/integrace) ===
+var jwtKey    = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-
 if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer))
 {
     logger.LogInformation("❌ JWT config missing. Jwt:Key or Jwt:Issuer not defined.");
     throw new InvalidOperationException("JWT config missing.");
 }
 
-// Add Authentication (before AddIdentity or directly behind it)
+// Defaulty necháme na JWT (pro integrace). FE endpointy hlídej přes Authorize(Policy="BrowserOnly").
 builder.Services.AddAuthentication(options =>
 {
-    // options for JWT authentication (in Postman)
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
 })
-    .AddJwtBearer(options =>
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = false, 
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
-        };
-    });
+        ValidateIssuer           = true,
+        ValidateAudience         = false,
+        ValidateLifetime         = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer              = jwtIssuer,
+        IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+    };
+});
 
+// === Cookie auth (pro prohlížeč) ===
 if (enableCookieAuth)
 {
     builder.Services.AddAuthentication()
         .AddCookie("AppCookie", opt =>
         {
-            opt.Cookie.Name = "app_auth";
-            opt.Cookie.HttpOnly = true;
+            opt.Cookie.Name       = "app_auth";
+            opt.Cookie.HttpOnly   = true;
             opt.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            opt.Cookie.SameSite = SameSiteMode.None; // or strict, beware of external redirects !
+            opt.Cookie.SameSite   = SameSiteMode.None;   // cross-site FE → BE
             opt.SlidingExpiration = true;
-            opt.ExpireTimeSpan = TimeSpan.FromDays(7);
+            opt.ExpireTimeSpan    = TimeSpan.FromDays(7);
 
             // API chování: žádné redirecty, ale 401/403
             opt.Events = new CookieAuthenticationEvents
             {
-                OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
+                OnRedirectToLogin       = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
                 OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; }
             };
         });
 }
 
-// Adding Authorization policies to distinguish between JWT and Cookie auth, farther in controllers (JWT only for debugging)
+// === Authorization policies ===
 builder.Services.AddAuthorization(o =>
 {
     o.AddPolicy("BrowserOnly", p => p
@@ -136,32 +132,28 @@ builder.Services.AddAuthorization(o =>
         .RequireAuthenticatedUser());
 
     o.AddPolicy("AdminOnly", p => p
-    .AddAuthenticationSchemes("AppCookie")
-    .RequireRole("Admin"));
+        .AddAuthenticationSchemes("AppCookie")
+        .RequireRole("Admin"));
 });
 
+// === Antiforgery ===
 var isDev = builder.Environment.IsDevelopment();
-
-// Antiforgery – jen registrace pro F1 (validaci zapneme ve F3)
 if (enableCookieAuth)
 {
     builder.Services.AddAntiforgery(o =>
     {
-        o.HeaderName = "X-CSRF-TOKEN";
-        o.Cookie.Name = "XSRF-TOKEN";
-        o.Cookie.HttpOnly = false; // FE musí cookie přečíst (double-submit pattern ve F3)
-        o.Cookie.SameSite = isDev
-            ? SameSiteMode.Lax
-            : SameSiteMode.None;
-        o.Cookie.SecurePolicy = isDev
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        o.HeaderName       = "X-CSRF-TOKEN";
+        o.Cookie.Name      = "XSRF-TOKEN";
+        o.Cookie.HttpOnly  = false; // token primárně bereme z JSON /api/csrf; cookie může zůstat ne-HttpOnly
+        o.Cookie.SameSite  = isDev ? SameSiteMode.Lax  : SameSiteMode.None;
+        o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     });
 }
 
-// CORS – dvě pojmenované policy
+// === CORS (FE s cookies) ===
 var feOrigins = builder.Configuration.GetSection("Cors:FeOrigins").Get<string[]>()
-                ?? new[] {
+                ?? new[]
+                {
                     "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app",
                     "http://localhost:3000",
                     "https://localhost:5173"
@@ -169,55 +161,37 @@ var feOrigins = builder.Configuration.GetSection("Cors:FeOrigins").Get<string[]>
 
 builder.Services.AddCors(options =>
 {
-    // FE (browser, cookies)
     options.AddPolicy("FeCors", p => p
-        .WithOrigins(feOrigins)       // nutně přesné originy (scheme + port)
-        .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        .WithHeaders("content-type", "x-csrf-token")   // ⬅️ DŮLEŽITÉ
-        .AllowCredentials());         // kvůli cookies
-
-    // Integrace (JWT, žádné cookies)
-    options.AddPolicy("IntegrationsCors", p => p
-        .AllowAnyOrigin()             // nebo konkrétní seznam, ale bez credentials
-        .AllowAnyHeader()
-        .AllowAnyMethod());
+        .WithOrigins(feOrigins)                 // přesné originy (scheme + host + port)
+        .AllowAnyHeader()                       // jednodušší než whitelist – bezpečné v kombinaci s WithOrigins + CSRF
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
-
-
-
 
 var app = builder.Build();
 
-// debugging
+// === DB quick check (log) ===
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<InvoicesDbContext>();
-
     if (dbContext.Database.IsRelational())
     {
-        // Relational DB (SQL Server/Postgres…)
         logger.LogInformation("✅ DB loaded ");
         var canConnect = await dbContext.Database.CanConnectAsync();
         logger.LogInformation($"🧪 Can connect to DB: {canConnect}");
-
-        // (volitelně) migrace jen pro relační provider
-        // await dbContext.Database.MigrateAsync();
+        // případně migrace: await dbContext.Database.MigrateAsync();
     }
     else
     {
-        // InMemory / test – nic relačního zde nevolat
         logger.LogInformation("ℹ️ Non-relational provider (InMemory) – skipping connection checks.");
         await dbContext.Database.EnsureCreatedAsync();
     }
 }
 
-
+// === Global try/catch logger (passthrough pro 500) ===
 app.Use(async (context, next) =>
 {
-    try
-    {
-        await next();
-    }
+    try { await next(); }
     catch (Exception ex)
     {
         logger.LogInformation($"❌ Runtime exception: {ex.Message}");
@@ -226,14 +200,13 @@ app.Use(async (context, next) =>
     }
 });
 
+// === Pipeline pořadí ===
+app.UseCors("FeCors"); // 1) CORS (musí být před čímkoli, co vrací odpověď)
 
-// Configure the HTTP request pipeline for the authentication and authorization
-app.UseCors("FeCors"); // Enable CORS (cookie variant) for the application
-
-// Enable Antiforgery for CSRF protection and cookie auth
+// 2) Antiforgery – vydání tokenu a validace (jen s cookie auth)
 if (enableCookieAuth)
 {
-    // GET/HEAD: raise XSRF-TOKEN cookie
+    // GET/HEAD: vystavit/obnovit XSRF-TOKEN cookie a vrátili token na /api/csrf endpointu
     app.Use(async (ctx, next) =>
     {
         var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();
@@ -242,14 +215,14 @@ if (enableCookieAuth)
         await next();
     });
 
-    // validate CSRF (only when flag on)
+    // Validate CSRF pro "unsafe" metody (když zapnuto flagem)
     if (enableCsrfValidation)
     {
         app.Use(async (ctx, next) =>
         {
             if (HttpMethods.IsPost(ctx.Request.Method) ||
-                HttpMethods.IsPut(ctx.Request.Method) ||
-                HttpMethods.IsPatch(ctx.Request.Method) ||
+                HttpMethods.IsPut(ctx.Request.Method)  ||
+                HttpMethods.IsPatch(ctx.Request.Method)||
                 HttpMethods.IsDelete(ctx.Request.Method))
             {
                 try
@@ -269,29 +242,36 @@ if (enableCookieAuth)
     }
 }
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication(); // 3) Auth
+app.UseAuthorization();  // 4) AuthZ
 
-app.MapControllers();
-app.MapControllers().RequireCors("FeCors");
-
+// 5) Endpoints
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(o =>
     {
-        o.SwaggerEndpoint("/swagger/browser/swagger.json", "Invoices – Browser");
+        o.SwaggerEndpoint("/swagger/browser/swagger.json",      "Invoices – Browser");
         o.SwaggerEndpoint("/swagger/integrations/swagger.json", "Invoices – Integrations");
     });
 }
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" })); // Health check endpoint
-app.MapGet("/", () => Results.Ok(new { server_started = true })); // root endpoint
+app.MapControllers(); // ⚠️ jen jednou – globální CORS řeší UseCors výše
 
-using (var scope = app.Services.CreateScope())
+// Health/root
+app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" }));
+app.MapGet("/",       () => Results.Ok(new { server_started = true }));
+
+// CSRF endpoint – vrací token i nastaví cookie
+app.MapGet("/api/csrf", (HttpContext ctx, IAntiforgery anti) =>
 {
-    RoleManager<IdentityRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-}
+    var tokens = anti.GetAndStoreTokens(ctx);
+    ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
+    ctx.Response.Headers.Pragma      = "no-cache";
+    ctx.Response.Headers.Expires     = "0";
+    return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
+})
+.RequireCors("FeCors");
 
 logger.LogInformation("✅ App is starting...");
 
@@ -306,4 +286,5 @@ catch (Exception ex)
     throw; // důležité pro Azure, aby vrátil 500
 }
 
-public  partial class Program{} // supports WebApplicationFactory find the entry point for integration tests
+// For WebApplicationFactory (integration tests)
+public partial class Program { }
