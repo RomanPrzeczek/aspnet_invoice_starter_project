@@ -181,8 +181,8 @@ builder.Services.AddAntiforgery(o =>
     o.HeaderName        = "X-CSRF-TOKEN";
     o.Cookie.Name       = "XSRF-TOKEN-v2";
     o.Cookie.HttpOnly   = false; // token bereme z JSON /api/csrf; cookie je pro double-submit pattern
-    o.Cookie.SameSite   = isDev ? SameSiteMode.Lax : SameSiteMode.None;
-    o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+    o.Cookie.SameSite   = SameSiteMode.None;
+    o.Cookie.SecurePolicy =  CookieSecurePolicy.Always;
 });
 
 // === CORS (FE s cookies) ===
