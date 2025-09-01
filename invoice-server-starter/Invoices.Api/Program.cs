@@ -153,6 +153,9 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
     .SetApplicationName("InvoiceApi");
 
+logger.LogInformation("🔐 DataProtection keys path: {Path}", keysPath);
+
+
 // === Antiforgery: REGISTRACE VŽDY (validaci řídíme flagem níže) ===
 builder.Services.AddAntiforgery(o =>
 {
