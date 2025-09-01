@@ -138,17 +138,14 @@ builder.Services.AddAuthorization(o =>
 
 // === Antiforgery ===
 var isDev = builder.Environment.IsDevelopment();
-if (enableCookieAuth)
+builder.Services.AddAntiforgery(o =>
 {
-    builder.Services.AddAntiforgery(o =>
-    {
-        o.HeaderName       = "X-CSRF-TOKEN";
-        o.Cookie.Name      = "XSRF-TOKEN";
-        o.Cookie.HttpOnly  = false; // token primárně bereme z JSON /api/csrf; cookie může zůstat ne-HttpOnly
-        o.Cookie.SameSite  = isDev ? SameSiteMode.Lax  : SameSiteMode.None;
-        o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-    });
-}
+    o.HeaderName       = "X-CSRF-TOKEN";
+    o.Cookie.Name      = "XSRF-TOKEN";
+    o.Cookie.HttpOnly  = false; // token primárně bereme z JSON /api/csrf; cookie může zůstat ne-HttpOnly
+    o.Cookie.SameSite  = isDev ? SameSiteMode.Lax  : SameSiteMode.None;
+    o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+});
 
 // === CORS (FE s cookies) ===
 var feOrigins = builder.Configuration.GetSection("Cors:FeOrigins").Get<string[]>()
