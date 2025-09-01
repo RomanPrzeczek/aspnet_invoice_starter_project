@@ -301,26 +301,27 @@ app.MapGet("/diag/dp", () =>
 });
 
 // CSRF endpoint – nastaví cookie a vrátí token v JSON (no-store)
-app.MapGet("/api/csrf", (HttpContext ctx) =>
-{
-    try
-    {
-        var anti   = ctx.RequestServices.GetRequiredService<IAntiforgery>();
-        var tokens = anti.GetAndStoreTokens(ctx);
+// app.MapGet("/api/csrf", (HttpContext ctx) =>
+// {
+//     try
+//     {
+//         var anti   = ctx.RequestServices.GetRequiredService<IAntiforgery>();
+//         var tokens = anti.GetAndStoreTokens(ctx);
 
-        ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
-        ctx.Response.Headers.Pragma      = "no-cache";
-        ctx.Response.Headers.Expires     = "0";
+//         ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
+//         ctx.Response.Headers.Pragma      = "no-cache";
+//         ctx.Response.Headers.Expires     = "0";
 
-        return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "❌ /api/csrf failed");
-        return Results.Problem("CSRF endpoint failed", statusCode: 500);
-    }
-})
-.RequireCors("FeCors");
+//         return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
+//     }
+//     catch (Exception ex)
+//     {
+//         logger.LogError(ex, "❌ /api/csrf failed");
+//         return Results.Problem("CSRF endpoint failed", statusCode: 500);
+//     }
+// })
+// .RequireCors("FeCors");
+app.MapGet("/api/csrf/ping", () => Results.Ok(new { ok = true }));
 
 logger.LogInformation("✅ App is starting...");
 
