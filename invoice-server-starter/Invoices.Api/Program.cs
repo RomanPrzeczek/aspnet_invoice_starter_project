@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+using System;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.IO;
@@ -143,18 +144,36 @@ builder.Services.AddAuthorization(o =>
 });
 
 // === Data Protection (perzistentní klíče – důležité pro antiforgery na Azure) ===
-var home = Environment.GetEnvironmentVariable("HOME");
-var keysPath = !string.IsNullOrEmpty(home)
-    ? Path.Combine(home, "dp-keys") // Azure App Service
-    : Path.Combine(builder.Environment.ContentRootPath, "dp-keys"); // lokálně
-Directory.CreateDirectory(keysPath);
+// *** NEW: možnost řídit přes App Setting DP_KEYS_PATH + rozbalení %HOME%
+var configuredDpPath = builder.Configuration["DP_KEYS_PATH"];
+if (!string.IsNullOrWhiteSpace(configuredDpPath))
+{
+    configuredDpPath = Environment.ExpandEnvironmentVariables(configuredDpPath);
+}
+
+string? home = Environment.GetEnvironmentVariable("HOME"); // Azure App Service: D:\home (Windows) /home (Linux)
+
+// *** CHANGED: bezpečný výběr cesty – preferuj DP_KEYS_PATH, jinak %HOME%\dp-keys, jinak temp
+var keysPath = !string.IsNullOrWhiteSpace(configuredDpPath)
+    ? configuredDpPath
+    : !string.IsNullOrWhiteSpace(home)
+        ? Path.Combine(home, "dp-keys")
+        : Path.Combine(Path.GetTempPath(), "dp-keys"); // fallback
+
+try
+{
+    Directory.CreateDirectory(keysPath);
+    logger.LogInformation("🔐 DataProtection keys path: {Path}", keysPath);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "❌ Cannot create DP keys directory at {Path}", keysPath);
+    throw;
+}
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
     .SetApplicationName("InvoiceApi");
-
-logger.LogInformation("🔐 DataProtection keys path: {Path}", keysPath);
-
 
 // === Antiforgery: REGISTRACE VŽDY (validaci řídíme flagem níže) ===
 builder.Services.AddAntiforgery(o =>
@@ -264,6 +283,22 @@ app.MapControllers(); // jen jednou – CORS globálně řeší UseCors výše
 // Health/root
 app.MapGet("/health", () => Results.Ok(new { status = "ok - server runs" }));
 app.MapGet("/",       () => Results.Ok(new { server_started = true }));
+
+// *** NEW: Diagnostika zápisu do DP složky (rychlé ověření na Azure)
+app.MapGet("/diag/dp", () =>
+{
+    try
+    {
+        var testFile = Path.Combine(keysPath, $"probe-{Guid.NewGuid():N}.txt");
+        File.WriteAllText(testFile, DateTime.UtcNow.ToString("O"));
+        var xmlFiles = Directory.GetFiles(keysPath, "*.xml").Length;
+        return Results.Ok(new { ok = true, keysPath, xmlKeyFiles = xmlFiles, testFileCreated = testFile });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"DP diag failed: {ex.Message}", statusCode: 500);
+    }
+});
 
 // CSRF endpoint – nastaví cookie a vrátí token v JSON (no-store)
 app.MapGet("/api/csrf", (HttpContext ctx) =>
