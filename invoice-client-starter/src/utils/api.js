@@ -1,18 +1,20 @@
-// --- ENV triggers (see .env.development / .env.production) ---
+// --- ENV
 const DEFAULT_BASE = import.meta.env.MODE === "development" ? "/api" : "";
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE;
 const BASE = RAW_BASE.replace(/\/$/, "");
 
-const USE_COOKIES   = String(import.meta.env.VITE_USE_COOKIES ?? "true")  === "true";
+const USE_COOKIES   = String(import.meta.env.VITE_USE_COOKIES ?? "true")   === "true";
 const CSRF_REQUIRED = String(import.meta.env.VITE_CSRF_REQUIRED ?? "false") === "true";
 
-// --- CSRF constants (držme je v jednom místě)
-const CSRF_COOKIE = import.meta.env.VITE_XSRF_COOKIE_NAME || "XSRF-TOKEN-v2";
-const CSRF_HEADER = "X-CSRF-TOKEN";
+// <- nové
+const XSRF_COOKIE = import.meta.env.VITE_XSRF_COOKIE_NAME  ?? "XSRF-TOKEN-v2";
+const XSRF_HEADER = import.meta.env.VITE_XSRF_HEADER_NAME  ?? "X-CSRF-TOKEN";
 
-// ---- helpers ----
-function hasCookie(name) {
-  return typeof document !== "undefined" && document.cookie.includes(name + "=");
+// helpers
+function readCookie(name) {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return m ? decodeURIComponent(m[1]) : null;
 }
 function buildUrl(path, params = {}) {
   const qs = Object.entries(params).filter(([,v]) => v!=null && v!=="");
@@ -22,99 +24,65 @@ function buildUrl(path, params = {}) {
   return `${BASE}${p}${query}`;
 }
 
-// --- CSRF (request token držíme v paměti) ---
+// --- CSRF
 let __csrfToken = null;
 let __csrfLoading = null;
 
-// runtime detekce: pokud jedeme cookies a (flag je true NEBO už existuje csurf cookie),
-// tak CSRF považuj za vyžadovaný
 function needCsrf() {
-  return USE_COOKIES && (CSRF_REQUIRED || hasCookie(CSRF_COOKIE));
+  return USE_COOKIES && (CSRF_REQUIRED || !!readCookie(XSRF_COOKIE));
 }
 
 async function ensureCsrf() {
-  if (!needCsrf()) return;
-  if (__csrfToken) return;
-
+  if (!needCsrf() || __csrfToken) return;
   if (!__csrfLoading) {
-    const tryGet = async (path) => {
-      const r = await fetch(buildUrl(path), {
-        method: "GET",
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
+    // na produkci existuje /api/csrf
+    __csrfLoading = fetch(buildUrl("/api/csrf"), {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" }
+    })
+    .then(async r => {
       if (!r.ok) throw new Error(`CSRF GET failed: ${r.status}`);
       const data = await r.json().catch(() => ({}));
-      return data?.csrf || (document.cookie.match(new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]+)`))?.[1] ?? null);
-    };
-
-    __csrfLoading = (async () => {
-      try {
-        __csrfToken = await tryGet("/api/csrf");               // primární v prod
-      } catch (e) {
-        if (import.meta.env.DEV) {                             // fallback jen v dev
-          __csrfToken = await tryGet("/api/csrf2");
-        } else {
-          throw e;
-        }
-      }
+      __csrfToken = data?.csrf || readCookie(XSRF_COOKIE);
       if (!__csrfToken) throw new Error("CSRF token missing");
-    })().finally(() => { __csrfLoading = null; });
+    })
+    .finally(() => { __csrfLoading = null; });
   }
   await __csrfLoading;
 }
 
-// --- Core fetch ---
+// core fetch
 async function fetchData(path, { params, token, ...init } = {}) {
   const url = buildUrl(path, params);
   const headers = new Headers(init.headers ?? {});
-
-  // JSON defaults (nepřepisuj Content-Type u FormData)
   const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
-  if (init.body != null && !isFormData && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+
+  if (init.body != null && !isFormData && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
-  // JWT jen když nejedeme cookie flow
   if (token && !USE_COOKIES) headers.set("Authorization", `Bearer ${token}`);
-
-  // cookies pro FE
   if (USE_COOKIES) init.credentials = "include";
 
-  // CSRF pro mutace
-  // --- CSRF pro mutace (POST/PUT/PATCH/DELETE) ---
   const method = (init.method ?? "GET").toUpperCase();
-  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+  const isMutating = ["POST","PUT","PATCH","DELETE"].includes(method);
 
   if (USE_COOKIES && isMutating) {
-    // pokud je striktní režim, nejdřív si token vyžádej
-    if (CSRF_REQUIRED && !__csrfToken) {
-      await ensureCsrf();
-    }
-
-    // pošli, co máme: token z paměti nebo rovnou z cookie
-    const cookieToken =
-      typeof document !== "undefined" &&
-      document.cookie.split("; ").find(r => r.startsWith(`${CSRF_COOKIE}=`))?.split("=")[1];
-
-    const headerToken = __csrfToken || cookieToken;
-    if (headerToken) {
-      headers.set(CSRF_HEADER, headerToken);
-    }
+    if (CSRF_REQUIRED && !__csrfToken) await ensureCsrf();
+    const headerToken = __csrfToken || readCookie(XSRF_COOKIE);
+    if (headerToken) headers.set(XSRF_HEADER, headerToken);
   }
 
   let res = await fetch(url, { ...init, headers });
 
-  // --- auto-retry při expirovaném tokenu ---
+  // auto-retry na 400/403 (obnov CSRF)
   if (!res.ok && (res.status === 400 || res.status === 403) && USE_COOKIES && isMutating) {
-    __csrfToken = null;               // vyžádej nový
-    await ensureCsrf();
-    const cookieToken =
-      typeof document !== "undefined" &&
-      document.cookie.split("; ").find(r => r.startsWith(`${CSRF_COOKIE}=`))?.split("=")[1];
-    const headerToken = __csrfToken || cookieToken;
-
+    __csrfToken = null;
+    try { await ensureCsrf(); } catch {}
+    const headerToken = __csrfToken || readCookie(XSRF_COOKIE);
     if (headerToken) {
-      headers.set(CSRF_HEADER, headerToken);
+      headers.set(XSRF_HEADER, headerToken);
       res = await fetch(url, { ...init, headers });
     }
   }
@@ -129,7 +97,6 @@ async function fetchData(path, { params, token, ...init } = {}) {
   return ct.includes("application/json") ? res.json() : res.text();
 }
 
-// --- shortcuts ---
 export const apiGet    = (p, params = {}, t = null) => fetchData(p, { method: "GET", params, t });
 export const apiPost   = (p, data, t = null) => fetchData(p, { method: "POST", body: data instanceof FormData ? data : JSON.stringify(data), t });
 export const apiPut    = (p, data, t = null) => fetchData(p, { method: "PUT",  body: data instanceof FormData ? data : JSON.stringify(data), t });
