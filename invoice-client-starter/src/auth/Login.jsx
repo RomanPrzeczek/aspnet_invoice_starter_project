@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "./AuthContext";
-import { apiPost } from "../utils/api";
+import { apiPost, apiGet } from "../utils/api";
 import eyeShow from "../assets/eye-password-show-svgrepo-com.svg";
 import eyeHide from "../assets/eye-password-hide-svgrepo-com.svg";
 
@@ -51,6 +51,7 @@ const Login = () => {
     startTimer();
 
     try {
+      await apiGet("/api/csrf");   // PROD
       // BE může vrátit buď { token } (JWT), nebo { ok:true, auth:"cookie" }
       const data = await apiPost("/api/auth", {
         email,
