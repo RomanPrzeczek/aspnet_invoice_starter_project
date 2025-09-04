@@ -223,17 +223,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// === Global try/catch logger (passthrough pro 500) ===
-// app.Use(async (context, next) =>
-// {
-//     try { await next(); }
-//     catch (Exception ex)
-//     {
-//         logger.LogError(ex, "❌ Runtime exception");
-//         throw;
-//     }
-// });
-
 app.Use(async (ctx, next) =>
 {
     if (ctx.Request.Path.StartsWithSegments("/api/csrf"))
@@ -257,6 +246,11 @@ if (enableCsrfValidation)
             HttpMethods.IsPatch(ctx.Request.Method)||
             HttpMethods.IsDelete(ctx.Request.Method))
         {
+            var hasHeader = ctx.Request.Headers.TryGetValue("X-CSRF-TOKEN", out var hdr);
+            var hasCookie = ctx.Request.Cookies.TryGetValue("XSRF-TOKEN-v2", out var ck);
+            logger.LogInformation("CSRF precheck: hasHeader={hasHeader} lenH={lenH} hasCookie={hasCookie} lenC={lenC}",
+                hasHeader, hdr.ToString()?.Length ?? 0, hasCookie, ck?.Length ?? 0);
+
             try
             {
                 var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();

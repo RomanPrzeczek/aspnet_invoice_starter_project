@@ -8,21 +8,18 @@ namespace Invoices.Api.Controllers;
 [Route("api/csrf")]
 public class CsrfController : ControllerBase
 {
-    private readonly IAntiforgery _anti;
-    private readonly ILogger<CsrfController> _log;
-
-    public CsrfController(IAntiforgery anti, ILogger<CsrfController> log)
-    {
-        _anti = anti; _log = log;
-    }
-
     [HttpGet]
     [AllowAnonymous]
-    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public IActionResult GetCsrf()
+    public IActionResult GetCsrf([FromServices] IAntiforgery anti)
     {
-        var tokens = _anti.GetAndStoreTokens(HttpContext); // ⬅️ cookie nastaví framework sám
-        // pro FE vrátíme název hlavičky + request token
+        // 🔑 nastaví správně cookie dle AddAntiforgery(options.Cookie...)
+        var tokens = anti.GetAndStoreTokens(HttpContext);
+
+        Response.Headers["Cache-Control"] = "no-store, no-cache";
+        Response.Headers["Pragma"]        = "no-cache";
+        Response.Headers["Expires"]       = "0";
+
+        // název hlavičky máš "X-CSRF-TOKEN"
         return Ok(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
     }
 }
