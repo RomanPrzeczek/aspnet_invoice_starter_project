@@ -5,8 +5,8 @@ const BASE = RAW_BASE.replace(/\/$/, "");
 
 const USE_COOKIES   = String(import.meta.env.VITE_USE_COOKIES ?? "true")   === "true";
 const CSRF_REQUIRED = String(import.meta.env.VITE_CSRF_REQUIRED ?? "false") === "true";
+const CSRF_ENDPOINT = import.meta.env.VITE_CSRF_ENDPOINT ?? "/api/csrf";
 
-// <- nové
 const XSRF_COOKIE = import.meta.env.VITE_XSRF_COOKIE_NAME  ?? "XSRF-TOKEN-v2";
 const XSRF_HEADER = import.meta.env.VITE_XSRF_HEADER_NAME  ?? "X-CSRF-TOKEN";
 
@@ -36,7 +36,7 @@ async function ensureCsrf() {
   if (!needCsrf() || __csrfToken) return;
   if (!__csrfLoading) {
     // na produkci existuje /api/csrf
-    __csrfLoading = fetch(buildUrl("/api/csrf"), {
+    __csrfLoading = fetch(buildUrl(CSRF_ENDPOINT), {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" }
