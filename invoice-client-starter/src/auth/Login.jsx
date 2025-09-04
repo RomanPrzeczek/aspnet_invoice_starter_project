@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "./AuthContext";
-import { apiGet, apiPost } from "../utils/api";
+import { apiPost } from "../utils/api";
 import eyeShow from "../assets/eye-password-show-svgrepo-com.svg";
 import eyeHide from "../assets/eye-password-hide-svgrepo-com.svg";
 
@@ -44,15 +44,6 @@ const Login = () => {
     }
   };
 
-  // Volitelná „pojistka“: před prvním POST si vyžádej CSRF token (api.js už to umí sám)
-  async function ensureCsrf() {
-    try {
-      await apiGet("/api/csrf");
-    } catch {
-      /* ticho – api.js si CSRF primne sám při POST/PUT/DELETE */
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
@@ -60,9 +51,6 @@ const Login = () => {
     startTimer();
 
     try {
-      // (volitelné) – viz poznámku výš
-      await ensureCsrf();
-
       // BE může vrátit buď { token } (JWT), nebo { ok:true, auth:"cookie" }
       const data = await apiPost("/api/auth", {
         email,
@@ -123,13 +111,14 @@ const Login = () => {
           />
         </div>
 
-        <div className="mb-3 position-relative">
+        <div className="mb-3">
           <label htmlFor="password">{t("Password")}</label>
-          <div className="position-relative">
+
+          <div className="password-wrapper">
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="form-control pe-5"
+              className="form-control"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -138,13 +127,8 @@ const Login = () => {
             <button
               type="button"
               className="password-toggle-icon"
-              aria-label={
-                showPassword
-                  ? t("HidePassword") || "Hide password"
-                  : t("ShowPassword") || "Show password"
-              }
-              onClick={() => setShowPassword((s) => !s)}
-              style={{ background: "transparent", border: 0, padding: 0 }}
+              aria-label={showPassword ? t("HidePassword") : t("ShowPassword")}
+              onClick={() => setShowPassword(s => !s)}
             >
               <img src={showPassword ? eyeHide : eyeShow} alt="" />
             </button>

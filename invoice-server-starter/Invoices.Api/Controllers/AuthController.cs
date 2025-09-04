@@ -220,21 +220,5 @@ namespace Invoices.Api.Controllers
 
             return NotFound();
         }
-
-        /// <summary>
-        /// Provides CSRF tokens for secure requests.
-        /// Prevents CSRF attacks by issuing tokens that must be included in subsequent requests.
-        /// Together with CORS preflight it ensures that only trusted FE can make state-changing requests and can not be forged externally.
-        /// </summary>
-        /// <param name="antiforgery"></param>
-        /// <returns></returns>
-        [HttpGet("csrf")]
-        [AllowAnonymous] // before login we are not authorised
-        public IActionResult Csrf([FromServices] IAntiforgery antiforgery)
-        {
-            var tokens = antiforgery.GetAndStoreTokens(HttpContext);
-            // cookie XSRF-TOKEN is set; additionally token sent in body as well
-            return Ok(new { csrf = tokens.RequestToken });
-        }
     }
 }

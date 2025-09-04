@@ -6,6 +6,10 @@ const BASE = RAW_BASE.replace(/\/$/, "");
 const USE_COOKIES   = String(import.meta.env.VITE_USE_COOKIES ?? "true")  === "true";
 const CSRF_REQUIRED = String(import.meta.env.VITE_CSRF_REQUIRED ?? "false") === "true";
 
+// --- CSRF constants (držme je v jednom místě)
+const CSRF_COOKIE = import.meta.env.VITE_XSRF_COOKIE_NAME || "XSRF-TOKEN-v2";
+const CSRF_HEADER = "X-CSRF-TOKEN";
+
 // ---- helpers ----
 function hasCookie(name) {
   return typeof document !== "undefined" && document.cookie.includes(name + "=");
@@ -25,7 +29,7 @@ let __csrfLoading = null;
 // runtime detekce: pokud jedeme cookies a (flag je true NEBO už existuje csurf cookie),
 // tak CSRF považuj za vyžadovaný
 function needCsrf() {
-  return USE_COOKIES && (CSRF_REQUIRED || hasCookie("XSRF-TOKEN"));
+  return USE_COOKIES && (CSRF_REQUIRED || hasCookie(CSRF_COOKIE));
 }
 
 async function ensureCsrf() {
@@ -33,19 +37,29 @@ async function ensureCsrf() {
   if (__csrfToken) return;
 
   if (!__csrfLoading) {
-    __csrfLoading = fetch(buildUrl("/api/csrf"), {
-      method: "GET",
-      credentials: "include",
-      headers: { Accept: "application/json" }
-    })
-    .then(async r => {
+    const tryGet = async (path) => {
+      const r = await fetch(buildUrl(path), {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
       if (!r.ok) throw new Error(`CSRF GET failed: ${r.status}`);
-      // očekáváme { csrf: "..." }, fallback z cookie
       const data = await r.json().catch(() => ({}));
-      __csrfToken = data?.csrf || (document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)?.[1] ?? null);
+      return data?.csrf || (document.cookie.match(new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]+)`))?.[1] ?? null);
+    };
+
+    __csrfLoading = (async () => {
+      try {
+        __csrfToken = await tryGet("/api/csrf");               // primární v prod
+      } catch (e) {
+        if (import.meta.env.DEV) {                             // fallback jen v dev
+          __csrfToken = await tryGet("/api/csrf2");
+        } else {
+          throw e;
+        }
+      }
       if (!__csrfToken) throw new Error("CSRF token missing");
-    })
-    .finally(() => { __csrfLoading = null; });
+    })().finally(() => { __csrfLoading = null; });
   }
   await __csrfLoading;
 }
@@ -80,11 +94,11 @@ async function fetchData(path, { params, token, ...init } = {}) {
     // pošli, co máme: token z paměti nebo rovnou z cookie
     const cookieToken =
       typeof document !== "undefined" &&
-      document.cookie.split("; ").find(r => r.startsWith("XSRF-TOKEN="))?.split("=")[1];
+      document.cookie.split("; ").find(r => r.startsWith(`${CSRF_COOKIE}=`))?.split("=")[1];
 
     const headerToken = __csrfToken || cookieToken;
     if (headerToken) {
-      headers.set("X-CSRF-TOKEN", headerToken);
+      headers.set(CSRF_HEADER, headerToken);
     }
   }
 
@@ -96,11 +110,11 @@ async function fetchData(path, { params, token, ...init } = {}) {
     await ensureCsrf();
     const cookieToken =
       typeof document !== "undefined" &&
-      document.cookie.split("; ").find(r => r.startsWith("XSRF-TOKEN="))?.split("=")[1];
+      document.cookie.split("; ").find(r => r.startsWith(`${CSRF_COOKIE}=`))?.split("=")[1];
     const headerToken = __csrfToken || cookieToken;
 
     if (headerToken) {
-      headers.set("X-CSRF-TOKEN", headerToken);
+      headers.set(CSRF_HEADER, headerToken);
       res = await fetch(url, { ...init, headers });
     }
   }

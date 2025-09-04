@@ -178,11 +178,11 @@ builder.Services.AddDataProtection()
 // === Antiforgery: REGISTRACE VŽDY (validaci řídíme flagem níže) ===
 builder.Services.AddAntiforgery(o =>
 {
-    o.HeaderName        = "X-CSRF-TOKEN";
-    o.Cookie.Name       = "XSRF-TOKEN-v2";
-    o.Cookie.HttpOnly   = false; // token bereme z JSON /api/csrf; cookie je pro double-submit pattern
-    o.Cookie.SameSite   = SameSiteMode.None;
-    o.Cookie.SecurePolicy =  CookieSecurePolicy.Always;
+    o.HeaderName  = "X-CSRF-TOKEN";
+    o.Cookie.Name = "XSRF-TOKEN-v2";
+    o.Cookie.HttpOnly = false;
+    o.Cookie.SameSite = isDev ? SameSiteMode.Lax  : SameSiteMode.None;
+    o.Cookie.SecurePolicy = isDev ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 });
 
 // === CORS (FE s cookies) ===
@@ -292,40 +292,50 @@ app.MapControllers(); // jen jednou – CORS globálně řeší UseCors výše
 
 // „drátový“ endpoint přes MapGet na /api/csrf2 (mimo MVC)
 // obejde MVC i jakékoli filtry a ověří čistě antiforgery službu
-app.MapGet("/api/csrf2", async (HttpContext ctx) =>
+if (app.Environment.IsDevelopment())
 {
-    var log = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Csrf2");
-    try
+    app.MapGet("/api/csrf2", async (HttpContext ctx) =>
     {
-        var anti = ctx.RequestServices.GetService<IAntiforgery>();
-        if (anti == null)
+        var log = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Csrf2");
+        try
         {
-            log.LogError("IAntiforgery service NULL in /api/csrf2");
-            return Results.Problem("Antiforgery missing", statusCode: 500);
+            var anti = ctx.RequestServices.GetService<IAntiforgery>();
+            if (anti == null)
+            {
+                log.LogError("IAntiforgery service NULL in /api/csrf2");
+                return Results.Problem("Antiforgery missing", statusCode: 500);
+            }
+
+            var tokens = anti.GetTokens(ctx); // jen vygeneruj
+            ctx.Response.Cookies.Delete("XSRF-TOKEN");
+            ctx.Response.Cookies.Delete("XSRF-TOKEN-v2");
+
+            ctx.Response.Cookies.Append("XSRF-TOKEN-v2", tokens.CookieToken!, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                IsEssential = true
+            });
+
+            ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
+            ctx.Response.Headers.Pragma = "no-cache";
+            ctx.Response.Headers.Expires = "0";
+
+            return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN", src = "mapget" });
         }
-
-        var tokens = anti.GetTokens(ctx); // jen vygeneruj
-        ctx.Response.Cookies.Delete("XSRF-TOKEN");
-        ctx.Response.Cookies.Delete("XSRF-TOKEN-v2");
-
-        ctx.Response.Cookies.Append("XSRF-TOKEN-v2", tokens.CookieToken!, new CookieOptions
+        catch (Exception ex)
         {
-            HttpOnly = false, Secure = true, SameSite = SameSiteMode.None, Path = "/", IsEssential = true
-        });
+            log.LogError(ex, "❌ /api/csrf2 failed");
+            return Results.Problem(ex.Message, statusCode: 500);
+        }
+    })
+    .RequireCors("FeCors");
+    
+    app.MapGet("/api/csrf/ping", () => Results.Ok(new { ok = true }));
 
-        ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
-        ctx.Response.Headers.Pragma = "no-cache";
-        ctx.Response.Headers.Expires = "0";
-
-        return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN", src = "mapget" });
-    }
-    catch (Exception ex)
-    {
-        log.LogError(ex, "❌ /api/csrf2 failed");
-        return Results.Problem(ex.Message, statusCode: 500);
-    }
-})
-.RequireCors("FeCors");
+}
 
 
 // Health/root
@@ -364,29 +374,6 @@ app.MapGet("/diag/endpoints", (IEnumerable<EndpointDataSource> sources) =>
                       .OrderBy(x => x);
     return Results.Json(list);
 });
-
-// CSRF endpoint – nastaví cookie a vrátí token v JSON (no-store)
-// app.MapGet("/api/csrf", (HttpContext ctx) =>
-// {
-//     try
-//     {
-//         var anti   = ctx.RequestServices.GetRequiredService<IAntiforgery>();
-//         var tokens = anti.GetAndStoreTokens(ctx);
-
-//         ctx.Response.Headers.CacheControl = "no-store, must-revalidate";
-//         ctx.Response.Headers.Pragma      = "no-cache";
-//         ctx.Response.Headers.Expires     = "0";
-
-//         return Results.Json(new { csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
-//     }
-//     catch (Exception ex)
-//     {
-//         logger.LogError(ex, "❌ /api/csrf failed");
-//         return Results.Problem("CSRF endpoint failed", statusCode: 500);
-//     }
-// })
-// .RequireCors("FeCors");
-app.MapGet("/api/csrf/ping", () => Results.Ok(new { ok = true }));
 
 logger.LogInformation("✅ App is starting...");
 
