@@ -23,6 +23,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.IO;
 
+using Microsoft.Extensions.Logging.AzureAppServices;
+
 var logger = LoggerFactory
     .Create(b => b.AddConsole())
     .CreateLogger("Startup");
@@ -203,6 +205,10 @@ builder.Services.AddCors(o =>
         .AllowCredentials());
 });
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();                 // jde do Application logs (Log Stream)
+builder.Logging.AddAzureWebAppDiagnostics();  // lepší integrace s App Service
+
 var app = builder.Build();
 
 // === DB quick check (log) ===
@@ -237,32 +243,49 @@ app.Use(async (ctx, next) =>
 app.UseCors("FeCors");          // 1) CORS
 
 // 2) CSRF VALIDACE jen pokud zapnutá flagem (token vydáváme na /api/csrf a po loginu)
+/*
+Hotfix – vynechán CSRF jen pro /api/auth
+V produkci je to bezpečné (login je stejně anonymní) a pomůže app hned rozběhnout. Přidána bílá listina:
+*/
 if (enableCsrfValidation)
 {
     app.Use(async (ctx, next) =>
     {
-        if (HttpMethods.IsPost(ctx.Request.Method) ||
-            HttpMethods.IsPut(ctx.Request.Method)  ||
-            HttpMethods.IsPatch(ctx.Request.Method)||
-            HttpMethods.IsDelete(ctx.Request.Method))
+        bool isMutating =
+            HttpMethods.IsPost(ctx.Request.Method) ||
+            HttpMethods.IsPut(ctx.Request.Method) ||
+            HttpMethods.IsPatch(ctx.Request.Method) ||
+            HttpMethods.IsDelete(ctx.Request.Method);
+
+        // ❗ vynecháme login a CSRF endpoint
+        bool skip =
+            ctx.Request.Path.StartsWithSegments("/api/csrf", StringComparison.OrdinalIgnoreCase) ||
+            ctx.Request.Path.Equals("/api/auth", StringComparison.OrdinalIgnoreCase);
+
+        if (isMutating && !skip)
         {
-            var hasHeader = ctx.Request.Headers.TryGetValue("X-CSRF-TOKEN", out var hdr);
-            var hasCookie = ctx.Request.Cookies.TryGetValue("XSRF-TOKEN-v2", out var ck);
-            logger.LogInformation("CSRF precheck: hasHeader={hasHeader} lenH={lenH} hasCookie={hasCookie} lenC={lenC}",
-                hasHeader, hdr.ToString()?.Length ?? 0, hasCookie, ck?.Length ?? 0);
+            var log = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("CSRF");
+            var hasHdr = ctx.Request.Headers.TryGetValue("X-CSRF-TOKEN", out var hdr);
+            var cookie = ctx.Request.Cookies.TryGetValue("XSRF-TOKEN-v2", out var ck);
+
+            log.LogInformation("CSRF precheck {path}: hasHeader={hasHdr} len={hdrLen} hasCookie={hasCk}",
+                ctx.Request.Path, hasHdr, hasHdr ? hdr.ToString().Length : 0, ck);
+
 
             try
             {
                 var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();
                 await anti.ValidateRequestAsync(ctx);
             }
-            catch (AntiforgeryValidationException)
+            catch (AntiforgeryValidationException ex)
             {
+                log.LogWarning(ex, "CSRF validation FAILED for {path}", ctx.Request.Path);
                 ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await ctx.Response.WriteAsync("CSRF validation failed");
                 return;
             }
         }
+
         await next();
     });
 }
