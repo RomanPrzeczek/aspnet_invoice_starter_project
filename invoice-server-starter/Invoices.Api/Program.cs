@@ -188,13 +188,14 @@ builder.Services.AddAntiforgery(o =>
 });
 
 // === CORS (FE s cookies) ===
-var feOrigins = builder.Configuration.GetSection("Cors:FeOrigins").Get<string[]>()
-                ?? new[]
-                {
-                    "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app",
-                    "http://localhost:3000",
-                    "https://localhost:5173"
+var feOrigins = builder.Configuration.GetSection("Security:FeOrigins").Get<string[]>()
+                ?? new[] {
+                  "https://aspnetinvoicestarterproject-production-4f5c.up.railway.app",
+                  "http://localhost:3000",
+                  "https://localhost:5173"
                 };
+
+builder.Services.AddSingleton(new FeOriginsHolder(feOrigins));
 
 builder.Services.AddCors(o =>
 {

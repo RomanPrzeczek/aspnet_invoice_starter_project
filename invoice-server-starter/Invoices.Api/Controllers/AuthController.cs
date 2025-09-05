@@ -6,8 +6,6 @@ using Invoices.Api.Interfaces;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.Extensions.Configuration;
-using System.Linq;
 
 namespace Invoices.Api.Controllers
 {
@@ -16,6 +14,7 @@ namespace Invoices.Api.Controllers
     [Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
     public class AuthController : ControllerBase
     {
+        private readonly FeOriginsHolder _fe;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IPersonManager _personManager;
@@ -23,8 +22,9 @@ namespace Invoices.Api.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly IJwtTokenManager _jwtTokenManager;
 
-        public AuthController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IPersonManager personManager, IConfiguration configuration, ILogger<AuthController> logger, IJwtTokenManager jwtTokenManager)
+        public AuthController(FeOriginsHolder fe, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IPersonManager personManager, IConfiguration configuration, ILogger<AuthController> logger, IJwtTokenManager jwtTokenManager)
         {
+            _fe = fe;
             _signInManager = signInManager;
             _userManager = userManager;
             _personManager = personManager;
@@ -116,34 +116,35 @@ namespace Invoices.Api.Controllers
         public async Task<IActionResult> Login([FromBody] AuthDto authDto)
         {
             // 🔐 1) Přísná kontrola původu požadavku (chrání login před "login CSRF")
-            var allowedOrigins = _configuration.GetSection("Cors:FeOrigins").Get<string[]>() ?? Array.Empty<string>();
+            var allowedOrigins = _fe.Origins;
 
-            // vezmi buď Origin, nebo Referer (někdy přijde jen jedno)
-            var originHeader  = Request.Headers["Origin"].ToString();
-            var refererHeader = Request.Headers["Referer"].ToString();
-
+            static string Norm(string? s) => (s ?? "").Trim().TrimEnd('/').ToLowerInvariant();
             static string? ToOrigin(string url)
             {
                 if (string.IsNullOrWhiteSpace(url)) return null;
                 if (!Uri.TryCreate(url, UriKind.Absolute, out var u)) return null;
-                var portPart = u.IsDefaultPort ? "" : $":{u.Port}";
-                return $"{u.Scheme}://{u.Host}{portPart}";
+                var port = u.IsDefaultPort ? "" : $":{u.Port}";
+                return $"{u.Scheme}://{u.Host}{port}";
             }
 
-            var originFromOrigin  = ToOrigin(originHeader);
-            var originFromReferer = ToOrigin(refererHeader);
+            var originHdr  = Request.Headers["Origin"].ToString();
+            var refererHdr = Request.Headers["Referer"].ToString();
 
-            bool isAllowed = new[] { originFromOrigin, originFromReferer }
-                .Where(o => !string.IsNullOrEmpty(o))
-                .Any(o => allowedOrigins.Contains(o!, StringComparer.OrdinalIgnoreCase));
+            var originFromOrigin  = Norm(ToOrigin(originHdr));
+            var originFromReferer = Norm(ToOrigin(refererHdr));
 
-            // V DEV prostředí bývá vše na localhostu – pokud chceš být přísný i tam, klidně odeber tenhle blok.
+            var allowed = _fe.Origins.Select(Norm).ToArray();
+
+            bool isAllowed =
+                (!string.IsNullOrEmpty(originFromOrigin)  && allowed.Contains(originFromOrigin)) ||
+                (!string.IsNullOrEmpty(originFromReferer) && allowed.Any(o => originFromReferer.StartsWith(o)));
+
             var isDev = HttpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
             if (!isDev && !isAllowed)
             {
-                _logger.LogWarning("🚫 Login blocked due to invalid Origin/Referer. Origin={Origin} Referer={Referer}",
-                    originHeader, refererHeader);
-                return Forbid(); // 403
+                _logger.LogWarning("🚫 Login blocked due to invalid Origin/Referer. Origin={Origin} Referer={Referer}. Allowed={Allowed}",
+                    originHdr, refererHdr, string.Join(", ", allowed));
+                return Forbid();
             }
 
             _logger.LogInformation("👉 Login endpoint triggered.");
