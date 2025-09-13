@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 
 namespace Invoices.Api.Controllers;
 
+[EnableCors("FeCors")]
 [ApiController]
 [Route("api/csrf")]
 public class CsrfController : ControllerBase

@@ -97,7 +97,14 @@ async function fetchData(path, { params, token, ...init } = {}) {
   return ct.includes("application/json") ? res.json() : res.text();
 }
 
-export const apiGet    = (p, params = {}, t = null) => fetchData(p, { method: "GET", params, t });
-export const apiPost   = (p, data, t = null) => fetchData(p, { method: "POST", body: data instanceof FormData ? data : JSON.stringify(data), t });
-export const apiPut    = (p, data, t = null) => fetchData(p, { method: "PUT",  body: data instanceof FormData ? data : JSON.stringify(data), t });
-export const apiDelete = (p, t = null) => fetchData(p, { method: "DELETE", t });
+export const apiGet    = (p, params = {}, token = null) =>
+  fetchData(p, { method: "GET", params, token })
+
+export const apiPost   = (p, data, token = null) =>
+  fetchData(p, { method: "POST", body: data instanceof FormData ? data : JSON.stringify(data), token })
+
+export const apiPut    = (p, data, token = null) =>
+  fetchData(p, { method: "PUT",  body: data instanceof FormData ? data : JSON.stringify(data), token })
+
+export const apiDelete = (p, token = null) =>
+  fetchData(p, { method: "DELETE", token })

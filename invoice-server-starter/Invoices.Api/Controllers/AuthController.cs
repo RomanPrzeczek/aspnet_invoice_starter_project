@@ -6,29 +6,36 @@ using Invoices.Api.Interfaces;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.Extensions.Options;
+using Invoices.Api.Managers;
 
 namespace Invoices.Api.Controllers
 {
+    
+    [EnableCors("FeCors")]  
     [ApiController]
     [Route("api")]
     [Authorize(Policy = "BrowserOnly")]   // just cookie, no Bearer
     public class AuthController : ControllerBase
     {
-        private readonly FeOriginsHolder _fe;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IPersonManager _personManager;
-        private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
         private readonly IJwtTokenManager _jwtTokenManager;
 
-        public AuthController(FeOriginsHolder fe, UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IPersonManager personManager, IConfiguration configuration, ILogger<AuthController> logger, IJwtTokenManager jwtTokenManager)
+        public AuthController(
+            IJwtTokenManager jwtTokenManager,
+            UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager,
+            IPersonManager personManager,
+            ILogger<AuthController> logger
+        )
         {
-            _fe = fe;
             _signInManager = signInManager;
             _userManager = userManager;
             _personManager = personManager;
-            _configuration = configuration;
             _logger = logger;
             _jwtTokenManager = jwtTokenManager;
         }
@@ -107,115 +114,64 @@ namespace Invoices.Api.Controllers
         }
 
         /// <summary>
-        /// Authenticates a user and returns a UserDTO if successful.
+        /// Authenticates a user and returns a JWT token if successful. 
+        /// Also supports cookie-based authentication.
+        /// Endpoint: api/auth
         /// </summary>
         /// <param name="authDto"></param>
+        /// <param name="anti"></param>
+        /// <param name="cfgOpt"></param>
+        /// <param name="log"></param>
         /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("auth")]
-        public async Task<IActionResult> Login([FromBody] AuthDto authDto)
+        public async Task<IActionResult> Login(
+            [FromBody] AuthDto authDto,
+            [FromServices] IAntiforgery anti,
+            [FromServices] IOptions<CookieSettings> cfgOpt,
+            [FromServices] ILogger<AuthController> log)
         {
-            // 🔐 1) Přísná kontrola původu požadavku (chrání login před "login CSRF")
-            var allowedOrigins = _fe.Origins;
+            var user = await _userManager.FindByEmailAsync(authDto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, authDto.Password))
+                return Unauthorized();
 
-            static string Norm(string? s) => (s ?? "").Trim().TrimEnd('/').ToLowerInvariant();
-            static string? ToOrigin(string url)
+            var roles   = await _userManager.GetRolesAsync(user);
+            var cfg     = cfgOpt.Value;
+            var useCookie = authDto.UseCookie ?? true;
+            var enableCookieAuth = HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()
+                .GetSection("Security").GetValue("EnableCookieAuth", true);
+
+            if (enableCookieAuth && useCookie)
             {
-                if (string.IsNullOrWhiteSpace(url)) return null;
-                if (!Uri.TryCreate(url, UriKind.Absolute, out var u)) return null;
-                var port = u.IsDefaultPort ? "" : $":{u.Port}";
-                return $"{u.Scheme}://{u.Host}{port}";
+                var claims = new List<Claim> {
+                    new(ClaimTypes.NameIdentifier, user.Id),
+                    new(ClaimTypes.Email, user.Email!)
+                };
+                claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+                var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "AppCookie"));
+                await HttpContext.SignInAsync("AppCookie", principal, new AuthenticationProperties { IsPersistent = true });
+
+                // po loginu vydej nový CSRF
+                var tokens = anti.GetAndStoreTokens(HttpContext);
+
+                // (volitelně – explicitně zajisti správnou doménu)
+                Response.Cookies.Append(cfg.XsrfCookieName ?? "XSRF-TOKEN-v2", tokens.RequestToken!, new CookieOptions {
+                    Domain   = cfg.Domain,      // ProdSim: api.local.test
+                    HttpOnly = false,
+                    Secure   = true,
+                    SameSite = SameSiteMode.None,
+                    Path     = "/"
+                });
+
+                return Ok(new { ok = true, auth = "cookie", csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
             }
 
-            var originHdr  = Request.Headers["Origin"].ToString();
-            var refererHdr = Request.Headers["Referer"].ToString();
-
-            var originFromOrigin  = Norm(ToOrigin(originHdr));
-            var originFromReferer = Norm(ToOrigin(refererHdr));
-
-            var allowed = _fe.Origins.Select(Norm).ToArray();
-
-            bool isAllowed =
-                (!string.IsNullOrEmpty(originFromOrigin)  && allowed.Contains(originFromOrigin)) ||
-                (!string.IsNullOrEmpty(originFromReferer) && allowed.Any(o => originFromReferer.StartsWith(o)));
-
-            var isDev = HttpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment();
-            if (!isDev && !isAllowed)
-            {
-                _logger.LogWarning("🚫 Login blocked due to invalid Origin/Referer. Origin={Origin} Referer={Referer}. Allowed={Allowed}",
-                    originHdr, refererHdr, string.Join(", ", allowed));
-                return Forbid();
-            }
-
-            _logger.LogInformation("👉 Login endpoint triggered.");
-
-            try
-            {
-                var user = await _userManager.FindByEmailAsync(authDto.Email);
-                if (user == null || !await _userManager.CheckPasswordAsync(user, authDto.Password))
-                {
-                    return Unauthorized();
-                }
-
-                // 🛡 inactive person checking
-                var isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
-                if (!isAdmin && !_personManager.HasActivePerson(user.Id))
-                {
-                    return Unauthorized("Account deactivated.");
-                }
-
-                var roles = await _userManager.GetRolesAsync(user);
-
-                // feature flag z konfigurace
-                var enableCookieAuth = HttpContext.RequestServices
-                    .GetRequiredService<IConfiguration>()
-                    .GetSection("Security").GetValue("EnableCookieAuth", true);
-
-                var useCookie = authDto.UseCookie ?? true; // volitelně: defaultuj na cookie, když je povolena
-                _logger.LogInformation("🍪 EnableCookieAuth={EnableCookieAuth}, UseCookie={UseCookie}", enableCookieAuth, useCookie);
-
-                if (enableCookieAuth && useCookie)
-                {
-                    // claims
-                    var claims = new List<Claim>
-                    {
-                        new(ClaimTypes.NameIdentifier, user.Id),
-                        new(ClaimTypes.Email, user.Email!)
-                    };
-                    claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
-
-                    // cookie sign-in (schéma musí odpovídat registraci v Program.cs)
-                    var identity  = new ClaimsIdentity(claims, "AppCookie");
-                    var principal = new ClaimsPrincipal(identity);
-
-                    // volitelně: nastavení perzistence/expirace dle "remember me"
-                    var authProps = new AuthenticationProperties
-                    {
-                        IsPersistent = true, // nebo podle authDto.RememberMe
-                        // ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7) // volitelně, jinak řídí cookie options
-                    };
-
-                    await HttpContext.SignInAsync("AppCookie", principal, authProps);
-
-                    // 🔁 DŮLEŽITÉ: po přihlášení vydat nový CSRF token (navázaný už na přihlášeného uživatele)
-                    var anti = HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
-                    var tokens = anti.GetAndStoreTokens(HttpContext);
-
-                    // FE si tenhle `csrf` hned uloží a použije pro další POSTy
-                    return Ok(new { ok = true, auth = "cookie", csrf = tokens.RequestToken, header = "X-CSRF-TOKEN" });
-                }
-
-                // JWT varianta (Postman / integrace)
-                var token = _jwtTokenManager.CreateToken(user, roles);
-                return Ok(new { token, auth = "jwt" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Login error");
-                throw;
-            }
+            // JWT pro Postman/integrace
+            var token = _jwtTokenManager.CreateToken(user, roles);
+            return Ok(new { token, auth = "jwt" });
         }
-
 
 
         /// <summary>

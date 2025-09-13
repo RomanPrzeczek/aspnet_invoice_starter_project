@@ -4,9 +4,8 @@
 .env
 .env.*
 secrets.json
-appsettings.json
-appsettings.Production.json
-appsettings.Development.json
+**/appsettings*.json
+!**/appsettings*.template.json
 *.pfx
 
 # ============================================
@@ -138,3 +137,17 @@ _ReSharper*/
 .DS_Store
 Thumbs.db
 /InvoiceApp.docx – zástupce.lnk
+
+# ============================================
+# certs (FE+BE)
+# ============================================
+invoice-client-starter/certs/
+invoice-server-starter/Invoices.Api/certs/
+*.pem
+*.key
+*.p12
+
+# ============================================
+# curl/debug artefacts
+# ============================================
+cookies.txt
