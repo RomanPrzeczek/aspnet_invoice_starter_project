@@ -108,17 +108,19 @@ if (enableCookieAuth)
     builder.Services.AddAuthentication()
         .AddCookie("AppCookie", opt =>
         {
-            var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>()!;
+            var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
 
-            opt.Cookie.Name          = cfg.AuthCookieName ?? "app_auth";
-            opt.Cookie.Domain        = cfg.Domain; // .local.test (DEV) / api.local.test (ProdSim)
-            opt.Cookie.HttpOnly      = true;
-            opt.Cookie.SecurePolicy  = cfg.Secure ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
-            opt.Cookie.SameSite      = ToSameSite(cfg.SameSite);
-            opt.SlidingExpiration    = true;
-            opt.ExpireTimeSpan       = TimeSpan.FromDays(7);
+            opt.Cookie.Name = cfg.AuthCookieName ?? "app_auth";
 
-            // API friendly – no redirects
+            if (!string.IsNullOrWhiteSpace(cfg.Domain))
+                opt.Cookie.Domain = cfg.Domain;
+
+            opt.Cookie.HttpOnly     = true;
+            opt.Cookie.SecurePolicy = cfg.Secure ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+            opt.Cookie.SameSite     = ToSameSite(cfg.SameSite);
+            opt.SlidingExpiration   = true;
+            opt.ExpireTimeSpan      = TimeSpan.FromDays(7);
+
             opt.Events = new CookieAuthenticationEvents
             {
                 OnRedirectToLogin        = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
@@ -165,14 +167,23 @@ builder.Services.AddDataProtection()
 // ---------- Antiforgery ----------
 builder.Services.AddAntiforgery(o =>
 {
-    var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>()!;
-    o.HeaderName          = cfg.XsrfHeaderName ?? "X-CSRF-TOKEN";
-    o.Cookie.Name         = cfg.XsrfCookieName ?? "XSRF-TOKEN-v2";
-    o.Cookie.Domain       = cfg.Domain;
-    o.Cookie.HttpOnly     = false;              // FE reads token into header
-    o.Cookie.SameSite     = SameSiteMode.None;  // cross-site
+    var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
+
+    o.HeaderName = cfg.XsrfHeaderName ?? "X-CSRF-TOKEN";
+    o.Cookie.Name = cfg.XsrfCookieName ?? "XSRF-TOKEN-v2";
+
+    if (!string.IsNullOrWhiteSpace(cfg.Domain))
+        o.Cookie.Domain = cfg.Domain;
+
+    o.Cookie.HttpOnly = false;              // FE čte do hlavičky
+    o.Cookie.SameSite = SameSiteMode.None;  // cross-site
     o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
+
+// ---------- for debugging only ----------
+var cs = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
+logger.LogInformation("Cookies.Domain='{Domain}', Name='{Name}'", cs.Domain, cs.AuthCookieName ?? "app_auth");
+
 
 // ---------- CORS ----------
 var feOrigins = builder.Configuration.GetSection("Security:FeOrigins").Get<string[]>() ?? Array.Empty<string>();
