@@ -35,4 +35,16 @@ export default [
       ],
     },
   },
+  {
+    files: [
+      'vite.config.*',
+      'server.mjs',
+      'scripts/**/*.{js,mjs,cjs}',
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+      parserOptions: { sourceType: 'module' },
+    },
+  },
 ]

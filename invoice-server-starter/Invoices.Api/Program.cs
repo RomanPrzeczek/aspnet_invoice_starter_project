@@ -32,8 +32,9 @@ var isDev   = builder.Environment.IsDevelopment();
 var security = builder.Configuration.GetSection("Security");
 bool enableCookieAuth     = security.GetValue("EnableCookieAuth",     true);
 bool enableCsrfValidation = security.GetValue("EnableCsrfValidation", false);
-logger.LogInformation("Flags at runtime: EnableCookieAuth={EnableCookieAuth}, EnableCsrfValidation={EnableCsrfValidation}",
-    enableCookieAuth, enableCsrfValidation);
+bool enableHsts           = security.GetValue("EnableHsts",           true);
+logger.LogInformation("Flags: CookieAuth={EnableCookieAuth}, CsrfValidation={EnableCsrfValidation}, Hsts={EnableHsts}",
+    enableCookieAuth, enableCsrfValidation, enableHsts);
 
 // ---------- DB ----------
 var connectionString = builder.Configuration.GetConnectionString("AzureConnection");
@@ -42,7 +43,6 @@ builder.Services.AddDbContext<InvoicesDbContext>(opt =>
        .UseLazyLoadingProxies()
        .ConfigureWarnings(x => x.Ignore(CoreEventId.LazyLoadOnDisposedContextWarning)));
 
-// ---------- MVC + JSON ----------
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
@@ -55,14 +55,12 @@ builder.Services.AddSwaggerGen(c =>
     c.DocInclusionPredicate((doc, desc) => desc.GroupName == doc);
 });
 
-// ---------- Repositories & Managers ----------
+// ---------- DI ----------
 builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IPersonManager,  PersonManager>();
 builder.Services.AddScoped<IInvoiceManager, InvoiceManager>();
 builder.Services.AddScoped<IJwtTokenManager, JwtTokenManager>();
-
-// ---------- AutoMapper ----------
 builder.Services.AddAutoMapper(typeof(AutomapperConfigurationProfile));
 
 // ---------- Identity ----------
@@ -73,17 +71,15 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(o =>
     o.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<InvoicesDbContext>();
+builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddHttpContextAccessor(); // for SignInManager etc.
+// ---------- Authentication (single AddAuthentication) ----------
+var jwtKey    = builder.Configuration["Jwt:Key"]    ?? throw new InvalidOperationException("JWT Key missing.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer missing.");
 
-// ---------- JWT (default for integrations / Postman / clean DEV) ----------
-var jwtKey    = builder.Configuration["Jwt:Key"];
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-if (string.IsNullOrWhiteSpace(jwtKey) || string.IsNullOrWhiteSpace(jwtIssuer))
-    throw new InvalidOperationException("JWT config missing.");
-
-builder.Services.AddAuthentication(o =>
+var authBuilder = builder.Services.AddAuthentication(o =>
 {
+    // default scheme = JWT (Postman/integration)
     o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     o.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -96,37 +92,30 @@ builder.Services.AddAuthentication(o =>
         ValidateLifetime         = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer              = jwtIssuer,
-        IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+        IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
 });
 
-// ---------- Cookies ----------
+// Cookie scheme only when enabled
 builder.Services.Configure<CookieSettings>(builder.Configuration.GetSection("Cookies"));
-
 if (enableCookieAuth)
 {
-    builder.Services.AddAuthentication()
-        .AddCookie("AppCookie", opt =>
+    var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new();
+    authBuilder.AddCookie("AppCookie", opt =>
+    {
+        opt.Cookie.Name        = cfg.AuthCookieName ?? "app_auth";
+        if (!string.IsNullOrWhiteSpace(cfg.Domain)) opt.Cookie.Domain = cfg.Domain;
+        opt.Cookie.HttpOnly    = true;
+        opt.Cookie.SecurePolicy= cfg.Secure ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+        opt.Cookie.SameSite    = ToSameSite(cfg.SameSite);
+        opt.SlidingExpiration  = true;
+        opt.ExpireTimeSpan     = TimeSpan.FromDays(7);
+        opt.Events = new CookieAuthenticationEvents
         {
-            var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
-
-            opt.Cookie.Name = cfg.AuthCookieName ?? "app_auth";
-
-            if (!string.IsNullOrWhiteSpace(cfg.Domain))
-                opt.Cookie.Domain = cfg.Domain;
-
-            opt.Cookie.HttpOnly     = true;
-            opt.Cookie.SecurePolicy = cfg.Secure ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
-            opt.Cookie.SameSite     = ToSameSite(cfg.SameSite);
-            opt.SlidingExpiration   = true;
-            opt.ExpireTimeSpan      = TimeSpan.FromDays(7);
-
-            opt.Events = new CookieAuthenticationEvents
-            {
-                OnRedirectToLogin        = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
-                OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; }
-            };
-        });
+            OnRedirectToLogin        = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; },
+            OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; }
+        };
+    });
 }
 
 // ---------- Authorization ----------
@@ -135,68 +124,52 @@ builder.Services.AddAuthorization(o =>
     o.AddPolicy("BrowserOnly", p => p
         .AddAuthenticationSchemes("AppCookie")
         .RequireAuthenticatedUser());
-
     o.AddPolicy("JwtOnly", p => p
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
         .RequireAuthenticatedUser());
-
     o.AddPolicy("AdminOnly", p => p
         .AddAuthenticationSchemes("AppCookie")
         .RequireRole("Admin"));
 });
 
 // ---------- Data Protection ----------
-var configuredDpPath = builder.Configuration["DP_KEYS_PATH"];
-if (!string.IsNullOrWhiteSpace(configuredDpPath))
-    configuredDpPath = Environment.ExpandEnvironmentVariables(configuredDpPath);
-
-string? home = Environment.GetEnvironmentVariable("HOME");
-var keysPath = !string.IsNullOrWhiteSpace(configuredDpPath)
-    ? configuredDpPath
-    : !string.IsNullOrWhiteSpace(home)
-        ? Path.Combine(home!, "dp-keys")
-        : Path.Combine(Path.GetTempPath(), "dp-keys");
-
+var configuredDpPath = Environment.ExpandEnvironmentVariables(builder.Configuration["DP_KEYS_PATH"] ?? "");
+var home = Environment.GetEnvironmentVariable("HOME");
+var keysPath = !string.IsNullOrWhiteSpace(configuredDpPath) ? configuredDpPath
+            : !string.IsNullOrWhiteSpace(home)               ? Path.Combine(home!, "dp-keys")
+                                                             : Path.Combine(Path.GetTempPath(), "dp-keys");
 Directory.CreateDirectory(keysPath);
-logger.LogInformation("🔐 DataProtection keys path: {Path}", keysPath);
-
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-    .SetApplicationName("InvoiceApi");
+builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysPath)).SetApplicationName("InvoiceApi");
 
 // ---------- Antiforgery ----------
 builder.Services.AddAntiforgery(o =>
 {
-    var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
-
+    var cfg = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new();
     o.HeaderName = cfg.XsrfHeaderName ?? "X-CSRF-TOKEN";
     o.Cookie.Name = cfg.XsrfCookieName ?? "XSRF-TOKEN-v2";
-
-    if (!string.IsNullOrWhiteSpace(cfg.Domain))
-        o.Cookie.Domain = cfg.Domain;
-
-    o.Cookie.HttpOnly = false;              // FE čte do hlavičky
-    o.Cookie.SameSite = SameSiteMode.None;  // cross-site
+    if (!string.IsNullOrWhiteSpace(cfg.Domain)) o.Cookie.Domain = cfg.Domain;
+    o.Cookie.HttpOnly = false;
+    o.Cookie.SameSite = SameSiteMode.None;
     o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
-
-// ---------- for debugging only ----------
-var cs = builder.Configuration.GetSection("Cookies").Get<CookieSettings>() ?? new CookieSettings();
-logger.LogInformation("Cookies.Domain='{Domain}', Name='{Name}'", cs.Domain, cs.AuthCookieName ?? "app_auth");
-
 
 // ---------- CORS ----------
 var feOrigins = builder.Configuration.GetSection("Security:FeOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddSingleton(new FeOriginsHolder(feOrigins));
+builder.Services.AddCors(o => o.AddPolicy("FeCors", p => p.WithOrigins(feOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
-builder.Services.AddCors(o =>
+// ---------- HSTS (services) ----------
+if (!isDev && enableHsts)
 {
-    o.AddPolicy("FeCors", p => p
-        .WithOrigins(feOrigins)
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials());
-});
+    builder.Services.AddHsts(o =>
+    {
+        o.Preload = false;
+        o.IncludeSubDomains = false;
+        o.MaxAge = TimeSpan.FromMinutes(5);
+        o.ExcludedHosts.Add("localhost");
+        o.ExcludedHosts.Add("127.0.0.1");
+    });
+}
 
 // ---------- Logging ----------
 builder.Logging.ClearProviders();
@@ -210,9 +183,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<InvoicesDbContext>();
     if (db.Database.IsRelational())
     {
-        logger.LogInformation("✅ DB loaded");
-        var canConnect = await db.Database.CanConnectAsync();
-        logger.LogInformation("🧪 Can connect to DB: {CanConnect}", canConnect);
+        logger.LogInformation("✅ DB loaded; canConnect={ok}", await db.Database.CanConnectAsync());
     }
     else
     {
@@ -223,38 +194,43 @@ using (var scope = app.Services.CreateScope())
 // ---------- Pipeline ----------
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();       // DEV
+    app.UseDeveloperExceptionPage();
 }
-else if (app.Environment.IsEnvironment("ProdSim"))
+else if (enableHsts)
 {
-    app.UseHsts();                         // ProdSim = “prod-like”
+    app.UseHsts();                         // HSTS not in DEV must be allowed
 }
-app.UseHttpsRedirection();
+app.UseHttpsRedirection();                 
 
-app.UseCors("FeCors");                 
+app.UseCors("FeCors");
 
-// CSRF valiadtion only for mutations out of login/CSRF endpoint
+// Security headers (API-side XSS hardening – low risk)
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+    h.TryAdd("X-Content-Type-Options", "nosniff");
+    h.TryAdd("X-Frame-Options",        "DENY");
+    h.TryAdd("Referrer-Policy",        "strict-origin-when-cross-origin");
+    h.TryAdd("Permissions-Policy",     "camera=(), microphone=(), geolocation=()");
+    await next();
+});
+
+// CSRF validation only for mutations except /api/auth and /api/csrf
 if (enableCsrfValidation)
 {
     app.Use(async (ctx, next) =>
     {
-        bool isMutating =
-            HttpMethods.IsPost(ctx.Request.Method) ||
-            HttpMethods.IsPut(ctx.Request.Method) ||
-            HttpMethods.IsPatch(ctx.Request.Method) ||
-            HttpMethods.IsDelete(ctx.Request.Method);
+        bool isMutating = HttpMethods.IsPost(ctx.Request.Method)
+                       || HttpMethods.IsPut(ctx.Request.Method)
+                       || HttpMethods.IsPatch(ctx.Request.Method)
+                       || HttpMethods.IsDelete(ctx.Request.Method);
 
-        bool skip =
-            ctx.Request.Path.StartsWithSegments("/api/csrf", StringComparison.OrdinalIgnoreCase) ||
-            ctx.Request.Path.Equals("/api/auth", StringComparison.OrdinalIgnoreCase);
+        bool skip = ctx.Request.Path.StartsWithSegments("/api/csrf", StringComparison.OrdinalIgnoreCase)
+                 || ctx.Request.Path.Equals("/api/auth", StringComparison.OrdinalIgnoreCase);
 
         if (isMutating && !skip)
         {
-            try
-            {
-                var anti = ctx.RequestServices.GetRequiredService<IAntiforgery>();
-                await anti.ValidateRequestAsync(ctx);
-            }
+            try { await ctx.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(ctx); }
             catch (AntiforgeryValidationException)
             {
                 ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -262,7 +238,6 @@ if (enableCsrfValidation)
                 return;
             }
         }
-
         await next();
     });
 }
@@ -270,7 +245,6 @@ if (enableCsrfValidation)
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Swagger jen v DEV
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -308,13 +282,13 @@ public partial class Program
         string.Equals(v, "Strict", StringComparison.OrdinalIgnoreCase) ? SameSiteMode.Strict:
         SameSiteMode.Lax;
 }
-
 public sealed class CookieSettings
 {
-    public string? Domain { get; set; }            // .local.test (DEV) / api.local.test (ProdSim)
-    public string? AuthCookieName { get; set; }    // ".InvoiceAuth" apod.
-    public string? XsrfCookieName { get; set; }    // "XSRF-TOKEN-v2"
-    public string? XsrfHeaderName { get; set; }    // "X-CSRF-TOKEN"
+    public string? Domain { get; set; }
+    public string? AuthCookieName { get; set; }
+    public string? XsrfCookieName { get; set; }
+    public string? XsrfHeaderName { get; set; }
     public bool   Secure    { get; set; } = true;
     public string SameSite  { get; set; } = "None";
 }
+
