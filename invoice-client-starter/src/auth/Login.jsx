@@ -24,7 +24,7 @@ const Login = () => {
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    setCountdown(20);
+    setCountdown(60);
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
