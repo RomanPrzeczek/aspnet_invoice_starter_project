@@ -14,13 +14,16 @@ Tento dokument popisuje manuální i automatizované UI testy pro aplikaci Invoi
 ## Spuštění aplikace (dev)
 
 ### Backend
-
-* `ASPNETCORE_ENVIRONMENT=Development`
-* `dotnet run --no-launch-profile`
+* `POWERSHELL!`
+* `aspnet_invoice_starter_project\invoice-server-starter\Invoices.Api`
+* `\$env:ASPNETCORE_ENVIRONMENT="Development"`
+* `\dotnet build`
+* `\dotnet run --no-launch-profile`
 
 ### Frontend
-
-* `npm run dev`
+* `CMD!`
+* `aspnet_invoice_starter_project\invoice-client-starter`
+* `\npm run dev`
 
 ## Spuštění UI testů
 
