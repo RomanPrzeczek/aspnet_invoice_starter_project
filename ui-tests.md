@@ -34,14 +34,39 @@ V kořeni FE projektu:
 
 ## Seznam testů
 
-### UI-LOGIN-001 – Úspěšný login běžného uživatele (automatizováno)
+### UI-LOGIN-d1 – Přepínání navigačního odkazu (nepřihlášený uživatel, automatizováno)
 
-**Cíl:** Ověřit, že uživatel se úspěšně přihlásí a je přesměrován na `/persons`, kde se zobrazí seznam osob.
-**Synchronizace:** Test čeká na úspěšnou odpověď backendu `GET /api/persons (200 OK)`.
-**Ověření cílového stavu:** URL obsahuje `/persons` a UI zobrazuje data stránky (např. tabulku/seznam osob).
+**Cíl:** Ověřit správné chování navigačního odkazu v horní liště aplikace pro nepřihlášeného uživatele.  
+Odkaz se dynamicky přepíná mezi stránkami `/aboutApp` a `/login` v závislosti na aktuální routě.
+
+**Předpoklad:** Uživatel není přihlášen.
+
+**Ověření cílového stavu:**
+- Na stránce `/aboutApp` navigační brand odkazuje na `/login` a obsahuje text „Login / Přihlásit se“.
+- Po kliknutí je uživatel přesměrován na `/login`.
+- Na stránce `/login` navigační brand odkazuje na `/aboutApp` a obsahuje text „About / O aplikaci“.
+
+**Poznámka:**  
+Test ověřuje skutečné chování navigace z pohledu uživatele (href + viditelný text), nikoliv interní stav aplikace.
+
+### UI-LOGIN-d2 – Přepínání viditelnosti hesla (toggle „oko“, automatizováno)
+
+**Cíl:** Ověřit, že uživatel může pomocí ovládacího prvku („oko“) přepínat viditelnost hesla na přihlašovací stránce.
+
+**Předpoklad:** Uživatel se nachází na stránce `/login`.
+
+**Ověření cílového stavu:**
+- Pole pro heslo má ve výchozím stavu atribut `type="password"`.
+- Po kliknutí na tlačítko pro zobrazení hesla se atribut změní na `type="text"`.
+- Opětovným kliknutím se atribut vrátí na `type="password"`.
+
+**Poznámka:**  
+Test používá stabilní selektor podle CSS třídy ovládacího prvku (`.password-toggle-icon`), protože přístupné popisky (`aria-label`) se při přepnutí mění (Show / Hide password).
 
 ## Další plánované testy
 
-* UI-LOGIN-002 – Úspěšný login admina
-* UI-LOGIN-003 – Neúspěšný login (neplatné údaje)
+* UI-LOGIN-002 – Neúspěšný login (neplatné údaje)
+* UI-REGISTRACE - Úspěšná registrace
+* UI-AUTORIZACE-001 - Úspěšný login uživatele (vidí jen svá data, nemůže je smazat)
+* UI-AUTORIZACE-002 - Úspěšný login admina (vidí všechna data, může i mazat)
 * CRUD testy (osoby, faktury) – odděleně od login testů
