@@ -70,3 +70,6 @@ Test používá stabilní selektor podle CSS třídy ovládacího prvku (`.passw
 * UI-AUTORIZACE-001 - Úspěšný login uživatele (vidí jen svá data, nemůže je smazat)
 * UI-AUTORIZACE-002 - Úspěšný login admina (vidí všechna data, může i mazat)
 * CRUD testy (osoby, faktury) – odděleně od login testů
+* Filtrace dle atributů (bude specifikováno).
+* Statistiky (existence grafu, data - souhrné informace).
+* Cíl globál - test každé obrazovky (shora, sdola).
