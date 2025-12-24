@@ -4,7 +4,7 @@
     "lib": ["ES2020", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["cypress", "node"],
+    "types": ["cypress", "node", "mocha", "chai"],
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true
@@ -12,6 +12,10 @@
   "include": [
     "src",
     "tests_cypress/**/*.ts",
-    "cypress.config.ts"
+    "tests_playwright/**/*.ts",
+    "tests_selenium/**/*.ts",
+    "cypress.config.ts",
+    "playwright.config.ts",
+    "vite.config.ts"  
   ]
 }

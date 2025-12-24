@@ -2,7 +2,10 @@
 
 ## Účel
 
-Tento dokument popisuje manuální i automatizované UI testy pro aplikaci InvoiceApp. Aktuálně je automatizován test **UI-LOGIN-001** pomocí Playwright.
+Tento dokument popisuje manuální i automatizované UI testy pro aplikaci InvoiceApp.
+Testy budou rozděleny do dvou skupin, hlavní skupiny a podskupin doplňkových testů příslušné hlavní skupiny (začínají písmenem d), např.:
+Hlavní test: UI-LOGIN-001
+jeho doplňkov= testy (podskupiny): UI-LOGIN-d1, UI-LOGIN-d2.
 
 ## Testovací prostředí
 
@@ -32,7 +35,23 @@ V kořeni FE projektu:
 * `npx playwright test`
 * nebo konkrétně: `npx playwright test ui-login-user-ok.spec.ts`
 
+## Použité technologie testů
+Primární technologií je Playwright, použitá pro všechny (hlavní i doplňkové) testy.
+Dodatečně budou použity technologie Cypress a Selenium pro otestování hlavních skupin testů a porovnání výkonu technologií.
+
 ## Seznam testů
+
+### UI-LOGIN-001
+
+**Cíl:** Ověřit, přihlášení uživatele pomocí prvku v navigaci, zobrazující jeho email po úspěšném přihlášení.
+
+**Předpoklad:** Uživatel není přihlášen.
+
+**Ověření cílového stavu:**
+- Na stránce `/login` navigace obsahuje email přihlášeného.
+
+**Poznámka:**  
+Test zároveň ověřuje přítomnost tlačítka pro odhlášení a na začátku čistí mezipaměť pro zajištění předpokladu - uživatel nepřihlášen.
 
 ### UI-LOGIN-d1 – Přepínání navigačního odkazu (nepřihlášený uživatel, automatizováno)
 
