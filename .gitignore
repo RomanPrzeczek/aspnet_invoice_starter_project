@@ -141,8 +141,13 @@ Thumbs.db
 # ============================================
 # certs (FE+BE)
 # ============================================
-invoice-client-starter/certs/
-invoice-server-starter/Invoices.Api/certs/
+invoice-client-starter/certs/*
+invoice-server-starter/Invoices.Api/certs/*
+
+# povolena dokumentace certs
+!invoice-client-starter/certs/README.md
+!invoice-server-starter/Invoices.Api/certs/README.md
+
 *.pem
 *.key
 *.p12
