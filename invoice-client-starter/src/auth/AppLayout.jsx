@@ -16,6 +16,7 @@ import Register from "./Register";
 import PrivateRoute from "./PrivateRoute";
 import { useAuth } from "./AuthContext";
 import {useTranslation} from "react-i18next";
+import {TID} from "../testIds";
 
 const AppLayout = () => {
   const {t} = useTranslation();
@@ -48,6 +49,7 @@ const AppLayout = () => {
           <LanguageSwitcher />
 
           <button
+            data-testid={TID.nav.toggle}
             className="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
@@ -98,7 +100,7 @@ const AppLayout = () => {
                 <span className="navbar-text me-3 text-white">
                   {t('LoggedIn')}: {user?.email} {user?.isAdmin ? "(admin)" : ""}
                 </span>
-                <button className="btn btn-outline-light btn-sm" onClick={logout}>
+                <button data-testid={TID.nav.logout} className="btn btn-outline-light btn-sm" onClick={logout}>
                   {t('Logout')}
                 </button>
               </>

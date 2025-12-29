@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import {TID} from "../src/testIds";
 
 test('UI-LOGIN-001 – úspěšný login běžného uživatele', async ({ page }) => {
   // 0️⃣ ověření existujícího přihlášen (izolace testu)
@@ -19,20 +20,27 @@ test('UI-LOGIN-001 – úspěšný login běžného uživatele', async ({ page }
         response.status() === 200,
       { timeout: 90_000 }
     ),
-    page.getByRole('button', { name: 'Login' }).click(),
+    page.getByRole('button', { name: /login|přihlásit se/i }).click(),
   ]);
 
   // 4️⃣ Ověření přesměrování
   await expect(page).toHaveURL(/\/persons/, { timeout: 90_000 });
 
-    // 5️⃣ Ověření přihlášeného uživatele v navigaci
+  // 5️⃣ Ověření přihlášeného uživatele v navigaci
   await expect(
     page.getByText(/Přihlášen|Logged in\:\s*testino@example\.com/i)
   ).toBeVisible({ timeout: 90_000 });
 
   // 6️⃣ Ověření, že je k dispozici odhlášení (autentizovaný stav)
-  await expect(
-    page.getByRole('button', { name: /Odhlásit|Logout/i })
-  ).toBeVisible({ timeout: 90_000 });  
+  const logout = page.getByTestId(TID.nav.logout);
 
+  if (!(await logout.isVisible())) {
+    await page.getByTestId(TID.nav.toggle).click();
+  }
+  await expect(logout).toBeVisible({ timeout: 10_000 });
+  await logout.click();
+
+  // 7️⃣ Ověření návratu na /login stránku.
+  await expect(page).toHaveURL(/\/login/, { timeout: 30_000 });
+    
   });

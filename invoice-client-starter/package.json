@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:prodsim": "vite build --mode prodsim",
     "prodsim": "npm run build:prodsim && node server.mjs",
-    "test:ui:selenium": "node --loader ts-node/esm ./node_modules/mocha/bin/mocha.js --extension ts \"./tests_selenium/**/*.spec.ts\" --timeout 120000"
+    "test:ui:selenium": "cross-env TS_NODE_PROJECT=tsconfig.selenium.json node --loader ts-node/esm ./node_modules/mocha/bin/mocha.js --extension ts \"./tests_selenium/**/*.spec.ts\" --timeout 120000"
   },
   "dependencies": {
     "bootstrap": "^5.3.7",
@@ -26,7 +26,7 @@
     "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.57.0",
     "@types/chai": "^5.2.3",
-    "@types/mocha": "github:types/mocha",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^25.0.3",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -34,6 +34,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "chai": "^6.2.2",
     "chromedriver": "^143.0.3",
+    "cross-env": "^10.1.0",
     "cypress": "^15.8.1",
     "eslint": "^9.17.0",
     "eslint-plugin-react": "^7.37.2",

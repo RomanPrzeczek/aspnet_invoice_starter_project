@@ -1,4 +1,5 @@
 /// <reference types="cypress" />
+import {TID} from "../src/testIds";
 
 describe("UI-LOGIN-001 – úspěšný login běžného uživatele", () => {
   it("po loginu přesměruje na /persons a v navbaru ukáže přihlášeného uživatele + odhlášení", () => {
@@ -31,8 +32,16 @@ describe("UI-LOGIN-001 – úspěšný login běžného uživatele", () => {
     }).should("be.visible");
 
     // 6) Ověření dostupnosti odhlášení (CZ/EN)
-    cy.contains("button", /(Odhlásit|Logout)/i, { timeout: 90_000 }).should(
-      "be.visible"
-    );
+    cy.get("body").then(($body) => {
+      const logoutSel = `[data-testid="${TID.nav.logout}"]`;
+      const toggleSel = `[data-testid="${TID.nav.toggle}"]`;
+
+      if ($body.find(`${logoutSel}:visible`).length === 0) {
+        cy.get(toggleSel).click();
+      }
+    });
+
+    cy.get(`[data-testid="${TID.nav.logout}"]`).should("be.visible").click();
+    cy.location("pathname", { timeout: 30_000 }).should("match", /\/login/);
   });
 });
