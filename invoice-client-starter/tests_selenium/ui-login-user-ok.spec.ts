@@ -16,50 +16,30 @@ describe("UI-LOGIN-001 – úspěšný login běžného uživatele (Selenium)", 
     driver = await new Builder()
       .forBrowser("MicrosoftEdge")
       .build();
+
+      // simulace mobilního viewportu (390x844)
+      await driver.manage().window().setRect({ width: 390, height: 844, x: 0, y: 0 });
   });
 
   after(async () => {
     await driver.quit();
   });
-
-  async function findButtonByText(
-    driver: WebDriver,
-    pattern: RegExp,
-    timeoutMs: number
-  ): Promise<WebElement> {
-    const end = Date.now() + timeoutMs;
-  
-    while (Date.now() < end) {
-      const buttons = await driver.findElements(By.css("button"));
-      for (const b of buttons) {
-        const txt = (await b.getText()).trim();
-        if (pattern.test(txt)) return b;
-      }
-      await driver.sleep(200);
-    }
-  
-    throw new Error(`Button not found by text: ${pattern}`);
-  }
-  
-
-  async function ensureLogoutVisible() {
-    const logoutSel = By.css(`[data-testid="${TID.nav.logout}"]`);
-    const toggleSel = By.css(`[data-testid="${TID.nav.toggle}"]`);
-
-    const logoutCandidates = await driver.findElements(logoutSel);
-    const isVisible =
-      logoutCandidates.length > 0 && (await logoutCandidates[0].isDisplayed()).valueOf();
-
-    if (!isVisible) {
+ 
+  async function clickNavbarIcon() {
+    const toggleSel  = By.css(`[data-testid="${TID.appLayout_nav.toggle}"]`);
+    const toggleExists = await driver.findElements(toggleSel).then(elems => elems.length) > 0;
+    const toggleIsVisible = toggleExists ? await driver.findElement(toggleSel).isDisplayed() : false; 
+    console.log(`\nNavbar toggle visible: ${toggleIsVisible}\n`);
+    if(!toggleIsVisible) {
+      console.log("\nNavbar toggle neexistuje, pravděpodobně desktop – není potřeba klikat\n");
+      return;
+    } else {
+      console.log("\nNavbar toggle existuje.\n");
       const toggle = await driver.wait(until.elementLocated(toggleSel), 10_000);
+      await driver.wait(until.elementIsVisible(toggle), 10_000);
       await toggle.click();
     }
-
-    await driver.wait(until.elementLocated(logoutSel), 10_000);
-    const logout = await driver.findElement(logoutSel);
-    await driver.wait(async () => (await logout.isDisplayed()) === true, 10_000);
-    return logout;
-  }
+ }
 
   it("po loginu přesměruje na /persons a v navbaru ukáže přihlášeného uživatele + odhlášení", async () => {
     // 0) Izolace testu
@@ -84,12 +64,17 @@ describe("UI-LOGIN-001 – úspěšný login běžného uživatele (Selenium)", 
     await passwordInput.sendKeys(password);
 
     // 3) Klik na Login / Přihlásit se
-    const loginBtn = await findButtonByText(driver, /^(login|přihlásit\s*se)$/i, 10_000);
+    const loginSel  = By.css(`[data-testid="${TID.login.login}"]`);
+    const loginBtn = await driver.wait(until.elementLocated(loginSel), 10_000);
+    await driver.wait(until.elementIsVisible(loginBtn), 10_000);
     await loginBtn.click();
 
     // 4) Přesměrování na /persons
     await driver.wait(until.urlMatches(/\/persons/), 90_000);
     expect(await driver.getCurrentUrl()).to.match(/\/persons/);
+
+    // Otevření navbaru
+    await clickNavbarIcon();
 
     // 5) Navbar: přihlášený uživatel (CZ/EN)
     await driver.wait(async () => {
@@ -97,10 +82,18 @@ describe("UI-LOGIN-001 – úspěšný login běžného uživatele (Selenium)", 
       return /(Přihlášen|Logged in)\s*:\s*testino@example\.com/i.test(text);
     }, 90_000);
 
-    // 6) Logout button (CZ/EN)
-    const logoutBtn = await ensureLogoutVisible();
+    // 6) Navbar: tlačítko Logout / Odhlásit se
+    const logoutSel  = By.css(`[data-testid="${TID.appLayout_nav.logout}"]`);
+    const logoutBtn = await driver.wait(until.elementLocated(logoutSel), 10_000);
+    await driver.wait(until.elementIsVisible(logoutBtn), 10_000);
+    const logoutBtnText = await logoutBtn.getText();
+    expect(logoutBtnText).to.match(/^(Logout|Odhlásit)$/i);
+
+    // 7) Klik na Logout
     await logoutBtn.click();
 
+    // 8) Přesměrování na /login
     await driver.wait(until.urlMatches(/\/login/), 30_000);
   });
+
 }).timeout(120_000);

@@ -49,7 +49,7 @@ const AppLayout = () => {
           <LanguageSwitcher />
 
           <button
-            data-testid={TID.nav.toggle}
+            data-testid={TID.appLayout_nav.toggle}
             className="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
@@ -100,7 +100,7 @@ const AppLayout = () => {
                 <span className="navbar-text me-3 text-white">
                   {t('LoggedIn')}: {user?.email} {user?.isAdmin ? "(admin)" : ""}
                 </span>
-                <button data-testid={TID.nav.logout} className="btn btn-outline-light btn-sm" onClick={logout}>
+                <button data-testid={TID.appLayout_nav.logout} className="btn btn-outline-light btn-sm" onClick={logout}>
                   {t('Logout')}
                 </button>
               </>

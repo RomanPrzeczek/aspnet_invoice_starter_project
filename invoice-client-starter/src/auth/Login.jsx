@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 import { apiPost, apiGet } from "../utils/api";
 import eyeShow from "../assets/eye-password-show-svgrepo-com.svg";
 import eyeHide from "../assets/eye-password-hide-svgrepo-com.svg";
+import { TID } from "../testIds";
 
 const Login = () => {
   const { t } = useTranslation();
@@ -136,7 +137,7 @@ const Login = () => {
           </div>
         </div>
 
-        <button type="submit" className="btn btn-primary" disabled={isLoading}>
+        <button data-testid={TID.login.login} type="submit" className="btn btn-primary" disabled={isLoading}>
           {t("Login")}
         </button>
       </form>

@@ -1,16 +1,9 @@
 export const TID = {
-    auth: {
-      email: "auth.email",
-      password: "auth.password",
-      submit: "auth.submit",
-      error: "auth.error",
+    login: {
+      login: "login.login",
     },
-    nav: {
-      toggle: "nav.toggle",
-      logout: "nav.logout",
-    },
-    persons: {
-      table: "persons.table",
-      row: "persons.row", // pro opakující se věci spíš prefix
+    appLayout_nav: {
+      toggle: "appLayout_nav.toggle",
+      logout: "appLayout_nav.logout",
     },
 } as const;  
