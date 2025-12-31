@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:prodsim": "vite build --mode prodsim",
     "prodsim": "npm run build:prodsim && node server.mjs",
-    "test:ui:selenium": "cross-env TS_NODE_PROJECT=tsconfig.selenium.json node --loader ts-node/esm ./node_modules/mocha/bin/mocha.js --extension ts \"./tests_selenium/**/*.spec.ts\" --timeout 120000"
+    "test:ui:selenium": "cross-env NODE_NO_WARNINGS=1 TS_NODE_PROJECT=tsconfig.selenium.json node --loader ts-node/esm ./node_modules/mocha/bin/mocha.js --extension ts \"./tests_selenium/**/*.spec.ts\" --timeout 120000"
   },
   "dependencies": {
     "bootstrap": "^5.3.7",
