@@ -1,3 +1,4 @@
+import edge from "selenium-webdriver/edge.js";
 import { Builder, By, until, WebDriver, WebElement } from "selenium-webdriver";
 import { expect } from "chai";
 
@@ -16,16 +17,29 @@ describe("UI-LOGIN/LOGOUT-001 – úspěšný login/logout běžného uživatele
   const password = "Testino123+";
 
   before(async () => {
+    const options = new edge.Options();
+
+    if (process.env.HEADLESS === "1") {
+      options.addArguments("--headless=new");
+      options.addArguments("--disable-gpu");
+      options.addArguments("--window-size=390,844"); // dobré jako záloha
+    }
 
     driver = await new Builder()
       .forBrowser("MicrosoftEdge")
+      .setEdgeOptions(options)
       .build();
 
-      console.log("\n");
+    // ✅ vždy nastav viewport (v headless obzvlášť)
+    await driver.manage().window().setRect({ width: 390, height: 844, x: 0, y: 0 });
 
-      // simulace mobilního viewportu (390x844)
-      //await driver.manage().window().setRect({ width: 390, height: 844, x: 0, y: 0 });
+    console.log(
+      process.env.HEADLESS === "1"
+        ? "Selenium: HEADLESS mode"
+        : "Selenium: HEADED mode (UI visible)"
+    );
   });
+
 
   after(async () => {
     await driver.quit();
@@ -91,10 +105,12 @@ describe("UI-LOGIN/LOGOUT-001 – úspěšný login/logout běžného uživatele
 
     // 5) Navbar: přihlášený uživatel (CZ/EN)
     await seStep(TC, 6, TOTAL, "Ověření přihlášeného uživatele (emailu) v navigaci", driver, async () => {
+      // Otevření navbaru pokud je sbalený (mobil)
+      await clickNavbarIcon();
       await driver.wait(async () => {
-        const text = await driver.findElement(By.css("body")).getText();
-        return /(Přihlášen|Logged in)\s*:\s*testino@example\.com/i.test(text);
-      }, 90_000);
+        const navText = await driver.findElement(By.css("nav.navbar")).getText();
+        return /(Přihlášen|Logged in)\s*:\s*testino@example\.com/i.test(navText);
+      }, 30_000);
     });
 
     // 6) Navbar: tlačítko Logout / Odhlásit se

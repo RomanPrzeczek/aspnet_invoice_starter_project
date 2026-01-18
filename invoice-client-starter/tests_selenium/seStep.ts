@@ -1,4 +1,5 @@
 import { WebDriver } from "selenium-webdriver";
+let stderrPatched = false;
 
 export async function seStep(
   tc: string,
@@ -8,16 +9,18 @@ export async function seStep(
   driver: WebDriver,
   fn: () => Promise<void>
 ) {
-  // suppress known warnings
-  const origWrite = process.stderr.write.bind(process.stderr);
+    if (!stderrPatched) {
+    stderrPatched = true;
 
-  process.stderr.write = ((chunk: any, ...args: any[]) => {
-    const s = chunk?.toString?.() ?? "";
-    if (s.includes("fallback_task_provider") || s.includes("crbug.com/739782")) {
-      return true; // zahodit
-    }
-    return origWrite(chunk, ...args);
-  }) as any;
+    const origWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: any, ...args: any[]) => {
+      const s = chunk?.toString?.() ?? "";
+      if (s.includes("fallback_task_provider") || s.includes("crbug.com/739782")) {
+        return true;
+      }
+      return origWrite(chunk, ...args);
+    }) as any;
+  }
 
   // testHelper-script
   const label = `[${tc}][STEP ${stepNo}/${total}] ${title}`;
